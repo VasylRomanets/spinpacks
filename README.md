@@ -8,7 +8,7 @@ Apply themed spinner verb packs to [Claude Code](https://claude.ai/code). Replac
 
 ```
 $ spinpacks apply the-office
-Applied 'the-office' to user scope — 213 verbs active
+Applied 'the-office' to user scope — 230 verbs active
 
 $ spinpacks sample the-office -n 3
 Schruting it
