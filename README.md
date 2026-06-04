@@ -1,4 +1,4 @@
-# ✻ spinpacks
+# ✻ Spinpacks...
 
 <p align="left">
   <img src=".github/assets/spinnerverb.gif" width="50%" alt="Spinner Verb">
