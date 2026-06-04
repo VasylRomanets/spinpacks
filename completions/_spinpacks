@@ -1,0 +1,99 @@
+#compdef spinpacks
+
+_spinpacks_packs() {
+  local packs
+  packs=(${(f)"$(spinpacks list 2>/dev/null)"})
+  _describe 'pack' packs
+}
+
+_spinpacks() {
+  local -a commands
+  commands=(
+    'list:List available packs'
+    'ls:List available packs'
+    'apply:Apply a pack to Claude Code settings'
+    'install:Apply a pack to Claude Code settings (alias for apply)'
+    'remove:Remove a pack from Claude Code settings'
+    'update:Re-apply packs'
+    'status:Show status'
+    'mode:Get or set spinnerVerbs.mode'
+    'sample:Sample random verbs from a pack'
+    'info:Show pack details'
+    'search:Search packs by name or verb content'
+    'doctor:Check for configuration problems'
+    'version:Print version'
+    'completions:Generate shell completions'
+    'uninstall:Remove a pack (alias for remove)'
+    'help:Show help'
+  )
+
+  _arguments -C \
+    '(-V --version)'{-V,--version}'[Print version]' \
+    '(-h --help)'{-h,--help}'[Show help]' \
+    '1: :->command' \
+    '*:: :->args'
+
+  case $state in
+    command) _describe 'command' commands ;;
+    args)
+      case $words[1] in
+        apply|install|sample) _spinpacks_packs ;;
+        info)
+          _arguments \
+            '(-v --verbose)'{-v,--verbose}'[List all verbs]' \
+            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+            '--json[Output as JSON]' \
+            '1: :_spinpacks_packs'
+          ;;
+        remove|update)
+          _arguments \
+            '--all[Operate on all tracked packs]' \
+            '--force[Skip safety guards]' \
+            '--dry-run[Show what would change without writing]' \
+            '--scope[Target scope]:scope:(user project local system)' \
+            '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
+            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+            '--json[Output as JSON]' \
+            '1: :_spinpacks_packs'
+          ;;
+        list|ls)
+          _arguments \
+            '--applied[Show only applied packs]' \
+            '--scope[Filter --applied to a specific scope]:scope:(user project local system)' \
+            '(-v --verbose)'{-v,--verbose}'[Show verb count per pack]' \
+            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+            '--json[Output as JSON]'
+          ;;
+        search)
+          _arguments \
+            '(-v --verbose)'{-v,--verbose}'[Show matching verbs]' \
+            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+            '--json[Output as JSON]' \
+            '1: :'
+          ;;
+        uninstall)
+          _arguments \
+            '--all[Operate on all tracked packs]' \
+            '--force[Skip safety guards]' \
+            '--dry-run[Show what would change without writing]' \
+            '--scope[Target scope]:scope:(user project local system)' \
+            '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
+            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+            '--json[Output as JSON]' \
+            '1: :_spinpacks_packs'
+          ;;
+        status)
+          _arguments \
+            '--all[Show all scopes]' \
+            '--scope[Target scope]:scope:(user project local system)' \
+            '(-v --verbose)'{-v,--verbose}'[List all active verbs]' \
+            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+            '--json[Output as JSON]'
+          ;;
+        mode) _arguments '1: :(replace append)' ;;
+        completions) _arguments '1: :(bash zsh fish)' ;;
+      esac ;;
+  esac
+}
+
+_spinpacks

@@ -1,0 +1,1156 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'json'
+require 'optparse'
+require 'fileutils'
+
+VERSION           = '1.0.0'
+PACKS_DIR         = File.expand_path('../packs', File.dirname(File.realpath(__FILE__)))
+STATE_FILE        = File.expand_path('~/.local/state/spinpacks/state.json')
+MAX_FILE_SIZE     = 1_048_576 # 1 MB
+PACK_NAME_PATTERN = /\A[a-zA-Z0-9_\-]+\z/.freeze
+
+CLAUDE_DIR = File.expand_path(ENV.fetch('CLAUDE_CONFIG_DIR', '~/.claude'))
+
+SCOPES = {
+  'user'    => File.join(CLAUDE_DIR, 'settings.json'),
+  'project' => File.expand_path('.claude/settings.json'),
+  'local'   => File.expand_path('.claude/settings.local.json'),
+  'system'  => '/Library/Application Support/ClaudeCode/settings.json'
+}.freeze
+
+ALL_COMMANDS = %w[list ls apply install remove uninstall update status mode sample info search doctor version completions help].freeze
+
+VALID_OPTIONS = {
+  'list'        => %i[applied scope verbose quiet json no_color],
+  'ls'          => %i[applied scope verbose quiet json no_color],
+  'apply'       => %i[scope overwrite force dry_run verbose quiet json no_color],
+  'install'     => %i[scope overwrite force dry_run verbose quiet json no_color],
+  'remove'      => %i[scope force all dry_run verbose quiet json no_color],
+  'uninstall'   => %i[scope force all dry_run verbose quiet json no_color],
+  'update'      => %i[scope all dry_run verbose quiet json no_color],
+  'status'      => %i[scope all verbose quiet json no_color],
+  'mode'        => %i[scope quiet json no_color],
+  'sample'      => %i[count json no_color],
+  'info'        => %i[verbose quiet json no_color],
+  'search'      => %i[verbose quiet json no_color],
+  'doctor'      => %i[quiet json no_color],
+  'completions' => [],
+  'version'     => [],
+  'help'        => [],
+}.freeze
+
+# --- Color ---------------------------------------------------------------
+
+module Color
+  CODES = {
+    reset:  "\e[0m",
+    bold:   "\e[1m",
+    dim:    "\e[2m",
+    red:    "\e[31m",
+    green:  "\e[32m",
+    yellow: "\e[33m",
+    cyan:   "\e[36m"
+  }.freeze
+
+  @enabled = true
+
+  def self.enabled=(val);              @enabled = val; end
+  def self.enabled?(stream = $stdout); @enabled && stream.tty? && !ENV.key?('NO_COLOR'); end
+  def self.c(code, str, stream = $stdout); enabled?(stream) ? "#{CODES[code]}#{str}#{CODES[:reset]}" : str; end
+  def self.bold(str);    c(:bold,   str); end
+  def self.dim(str);     c(:dim,    str); end
+  def self.red(str);     c(:red,    str); end
+  def self.green(str);   c(:green,  str); end
+  def self.yellow(str);  c(:yellow, str); end
+  def self.cyan(str);    c(:cyan,   str); end
+  def self.red_err(str); c(:red,    str, $stderr); end
+end
+
+# --- Shell completions ---------------------------------------------------
+
+ZSH_COMPLETION = <<~'ZSH'
+  #compdef spinpacks
+
+  _spinpacks_packs() {
+    local packs
+    packs=(${(f)"$(spinpacks list 2>/dev/null)"})
+    _describe 'pack' packs
+  }
+
+  _spinpacks() {
+    local -a commands
+    commands=(
+      'list:List available packs'
+      'ls:List available packs'
+      'apply:Apply a pack to Claude Code settings'
+      'install:Apply a pack to Claude Code settings (alias for apply)'
+      'remove:Remove a pack from Claude Code settings'
+      'update:Re-apply packs'
+      'status:Show status'
+      'mode:Get or set spinnerVerbs.mode'
+      'sample:Sample random verbs from a pack'
+      'info:Show pack details'
+      'search:Search packs by name or verb content'
+      'doctor:Check for configuration problems'
+      'version:Print version'
+      'completions:Generate shell completions'
+      'uninstall:Remove a pack (alias for remove)'
+      'help:Show help'
+    )
+
+    _arguments -C \
+      '(-V --version)'{-V,--version}'[Print version]' \
+      '(-h --help)'{-h,--help}'[Show help]' \
+      '1: :->command' \
+      '*:: :->args'
+
+    case $state in
+      command) _describe 'command' commands ;;
+      args)
+        case $words[1] in
+          apply|install|sample) _spinpacks_packs ;;
+          info)
+            _arguments \
+              '(-v --verbose)'{-v,--verbose}'[List all verbs]' \
+              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+              '--json[Output as JSON]' \
+              '1: :_spinpacks_packs'
+            ;;
+          remove|update)
+            _arguments \
+              '--all[Operate on all tracked packs]' \
+              '--force[Skip safety guards]' \
+              '--dry-run[Show what would change without writing]' \
+              '--scope[Target scope]:scope:(user project local system)' \
+              '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
+              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+              '--json[Output as JSON]' \
+              '1: :_spinpacks_packs'
+            ;;
+          list|ls)
+            _arguments \
+              '--applied[Show only applied packs]' \
+              '--scope[Filter --applied to a specific scope]:scope:(user project local system)' \
+              '(-v --verbose)'{-v,--verbose}'[Show verb count per pack]' \
+              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+              '--json[Output as JSON]'
+            ;;
+          search)
+            _arguments \
+              '(-v --verbose)'{-v,--verbose}'[Show matching verbs]' \
+              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+              '--json[Output as JSON]' \
+              '1: :'
+            ;;
+          uninstall)
+            _arguments \
+              '--all[Operate on all tracked packs]' \
+              '--force[Skip safety guards]' \
+              '--dry-run[Show what would change without writing]' \
+              '--scope[Target scope]:scope:(user project local system)' \
+              '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
+              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+              '--json[Output as JSON]' \
+              '1: :_spinpacks_packs'
+            ;;
+          status)
+            _arguments \
+              '--all[Show all scopes]' \
+              '--scope[Target scope]:scope:(user project local system)' \
+              '(-v --verbose)'{-v,--verbose}'[List all active verbs]' \
+              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+              '--json[Output as JSON]'
+            ;;
+          mode) _arguments '1: :(replace append)' ;;
+          completions) _arguments '1: :(bash zsh fish)' ;;
+        esac ;;
+    esac
+  }
+
+  _spinpacks
+ZSH
+
+BASH_COMPLETION = <<~'BASH'
+  _spinpacks() {
+    local cur prev
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    local commands="list ls apply install remove uninstall update status mode sample info search doctor version completions help"
+
+    case "$prev" in
+      spinpacks) COMPREPLY=($(compgen -W "$commands" -- "$cur")); return ;;
+      apply|install|remove|uninstall|sample|info|update)
+        COMPREPLY=($(compgen -W "$(spinpacks list 2>/dev/null)" -- "$cur")); return ;;
+      completions) COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur")); return ;;
+      mode)    COMPREPLY=($(compgen -W "replace append" -- "$cur")); return ;;
+      --scope)     COMPREPLY=($(compgen -W "user project local system" -- "$cur")); return ;;
+    esac
+
+    if [[ "$cur" == -* ]]; then
+      COMPREPLY=($(compgen -W "--scope --overwrite --force --all --applied --dry-run -v --verbose -q --quiet --json --no-color -V --version -h --help" -- "$cur"))
+    fi
+  }
+
+  complete -F _spinpacks spinpacks
+BASH
+
+FISH_COMPLETION = <<~'FISH'
+  function __spinpacks_packs
+    spinpacks list 2>/dev/null
+  end
+
+  function __spinpacks_no_subcommand
+    not __fish_seen_subcommand_from list ls apply install remove uninstall update status mode sample info search doctor version completions help
+  end
+
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a list        -d 'List available packs'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a ls          -d 'List available packs'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a apply       -d 'Apply a pack'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a install     -d 'Apply a pack (alias for apply)'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a remove      -d 'Remove a pack'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a update      -d 'Re-apply packs'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a status      -d 'Show status'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a mode        -d 'Get or set mode'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a sample      -d 'Sample random verbs from a pack'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a info        -d 'Show pack details'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a search      -d 'Search packs'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a doctor      -d 'Check for problems'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a version     -d 'Print version'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a completions -d 'Generate shell completions'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a uninstall   -d 'Remove a pack (alias for remove)'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a help        -d 'Show help'
+
+  complete -c spinpacks -f -n '__fish_seen_subcommand_from apply remove uninstall sample info update' \
+    -a '(__spinpacks_packs)'
+  complete -c spinpacks -f -n '__fish_seen_subcommand_from mode'    -a 'replace append'
+  complete -c spinpacks -f -n '__fish_seen_subcommand_from completions' -a 'bash zsh fish'
+
+  complete -c spinpacks -l scope        -d 'Target scope' -r -a 'user project local system'
+  complete -c spinpacks -l overwrite    -d 'Replace existing verbs instead of appending'
+  complete -c spinpacks -l force        -d 'Skip safety guards'
+  complete -c spinpacks -l all          -d 'Operate on all tracked packs or show all scopes'
+  complete -c spinpacks -l applied      -d 'Show only applied packs (list/ls)'
+  complete -c spinpacks -l dry-run      -d 'Show what would change without writing'
+  complete -c spinpacks -s v -l verbose -d 'Show detailed output'
+  complete -c spinpacks -s q -l quiet   -d 'Suppress non-error output'
+  complete -c spinpacks -l json         -d 'Output as JSON'
+  complete -c spinpacks -l no-color     -d 'Disable color output'
+  complete -c spinpacks -s V -l version -d 'Print version'
+  complete -c spinpacks -s h -l help    -d 'Show help'
+FISH
+
+COMPLETIONS = { 'zsh' => ZSH_COMPLETION, 'bash' => BASH_COMPLETION, 'fish' => FISH_COMPLETION }.freeze
+
+# --- Help text -----------------------------------------------------------
+
+COMMAND_HELP = {
+  'list'        => <<~HELP,
+    list, ls [--applied [--scope SCOPE]] [-v] [--json] [-q]
+      List all available packs.
+      Use --applied to show only packs currently applied in any scope.
+      Use --scope with --applied to filter to a specific scope.
+      Use -v/--verbose to show verb count per pack.
+
+      Examples:
+        spinpacks list
+        spinpacks list --applied
+        spinpacks list --applied --scope project
+        spinpacks list -v
+  HELP
+  'apply'       => <<~HELP,
+    apply <pack> [--scope SCOPE] [--overwrite] [--force] [--dry-run] [-v] [-q] [--json]
+      Apply a pack to Claude Code settings.
+      Default scope: user. Default behaviour: append (merges with existing verbs).
+      Use --overwrite to replace all existing verbs with this pack only.
+        Note: --overwrite untracks any other packs in the scope since their
+        verbs are replaced. Run `spinpacks update --all` to restore them.
+      Use --force to re-apply even if the pack is already tracked.
+      Use --dry-run to preview changes without writing.
+
+      Examples:
+        spinpacks apply the-office
+        spinpacks apply the-office --scope project
+        spinpacks apply the-office --overwrite -v
+        spinpacks apply the-office --dry-run
+        spinpacks apply the-office --force
+  HELP
+  'remove'      => <<~HELP,
+    remove [<pack>] [--scope SCOPE] [--all] [--force] [--dry-run] [-v] [-q] [--json]
+      Remove a previously applied pack from Claude Code settings.
+      Only removes verbs that belong to the pack.
+      Use --all to remove all tracked packs.
+      Use --force to remove even if the pack is not tracked.
+      Use --dry-run to preview changes without writing.
+
+      Examples:
+        spinpacks remove the-office
+        spinpacks remove the-office --dry-run
+        spinpacks remove --all
+        spinpacks remove the-office --force
+  HELP
+  'update'      => <<~HELP,
+    update [<pack>] [--scope SCOPE] [--all] [--dry-run] [-v] [-q] [--json]
+      Re-apply a pack (or all tracked packs) to pick up new verbs after upgrade.
+      Use --all to make the intent explicit when updating all packs.
+      Use --dry-run to preview changes without writing.
+
+      Examples:
+        spinpacks update
+        spinpacks update --all
+        spinpacks update the-office
+        spinpacks update the-office --dry-run
+  HELP
+  'status'      => <<~HELP,
+    status [--scope SCOPE] [--all] [-v] [-q] [--json]
+      Show active verb count, mode and tracked packs for a scope.
+      Use --all to show every scope at once.
+      Use -v/--verbose to list all active verbs.
+
+      Examples:
+        spinpacks status
+        spinpacks status --all
+        spinpacks status --scope project -v
+        spinpacks status --json
+  HELP
+  'mode'    => <<~HELP,
+    mode [replace|append] [--scope SCOPE] [-q] [--json]
+      Get or set Claude Code's spinnerVerbs.mode.
+        replace — show only your custom verbs
+        append  — blend your verbs with Claude's built-in ones
+      Omit the value to print the current mode.
+
+      Examples:
+        spinpacks mode
+        spinpacks mode replace
+        spinpacks mode append --scope project
+  HELP
+  'sample'      => <<~HELP,
+    sample <pack> [-n COUNT] [--json]
+      Print N random verbs from a pack (default: 1). Pipeable.
+
+      Examples:
+        spinpacks sample the-office
+        spinpacks sample the-office -n 5
+        spinpacks sample the-office --json
+  HELP
+  'info'        => <<~HELP,
+    info <pack> [-v] [-q] [--json]
+      Show details about a pack: metadata and a random sample of verbs.
+      Use -v/--verbose to list all verbs instead of the sample.
+
+      Examples:
+        spinpacks info the-office
+        spinpacks info the-office -v
+        spinpacks info the-office --json
+  HELP
+  'search'      => <<~HELP,
+    search <text> [-v] [-q] [--json]
+      Search available packs by name, description, tags, or verb content.
+      Use -v/--verbose to show which verbs matched.
+
+      Examples:
+        spinpacks search the-office
+        spinpacks search comedy
+        spinpacks search Dwight
+        spinpacks search Dwight -v
+  HELP
+  'doctor'      => <<~HELP,
+    doctor [-q] [--json]
+      Check for problems: validates settings JSON, state file integrity,
+      and that all tracked packs are still installed.
+
+      Example:
+        spinpacks doctor
+  HELP
+  'install'     => <<~HELP,
+    install <pack> [--scope SCOPE] [--overwrite] [--force] [--dry-run] [-v] [-q] [--json]
+      Alias for apply. See `spinpacks help apply`.
+  HELP
+  'uninstall'   => <<~HELP,
+    uninstall [<pack>] [--scope SCOPE] [--all] [--force] [--dry-run] [-v] [-q] [--json]
+      Alias for remove. See `spinpacks help remove`.
+  HELP
+  'completions' => <<~HELP,
+    completions <shell>
+      Print a shell completion script for bash, zsh, or fish.
+      Homebrew users get completions installed automatically.
+      For manual installs, pipe the output to the appropriate file.
+
+      Setup:
+        # zsh  — add to fpath, then compinit
+        spinpacks completions zsh > ~/.zsh/completions/_spinpacks
+
+        # bash — source in ~/.bashrc
+        spinpacks completions bash >> ~/.bashrc
+
+        # fish
+        spinpacks completions fish > ~/.config/fish/completions/spinpacks.fish
+  HELP
+  'version'     => <<~HELP,
+    version
+      Print the current spinpacks version.
+
+      Example:
+        spinpacks version
+  HELP
+  'help'        => <<~HELP
+    help [COMMAND]
+      Show help, or detailed help for a specific command.
+
+      Examples:
+        spinpacks help
+        spinpacks help apply
+  HELP
+}.freeze
+
+HELP_TEXT = <<~HELP
+  Usage: spinpacks <command> [pack] [options]
+
+  Commands:
+    list, ls                   List available packs (--applied filters to applied; -v shows verb count)
+    apply, install <pack>      Apply a pack to Claude Code settings
+    remove, uninstall [<pack>] Remove a pack (or --all) from Claude Code settings
+    update [<pack>]            Re-apply pack(s) (all tracked if no pack given)
+    status                     Show active verbs, mode and tracked packs (--all shows every scope)
+    mode [replace|append]      Get or set Claude Code's spinnerVerbs.mode
+    sample <pack> [-n N]       Print N random verbs from a pack (default: 1)
+    info <pack>                Show pack details and a sample of verbs (-v lists all)
+    search <text>              Search packs by name or verb content (-v shows matching verbs)
+    doctor                     Check for configuration problems
+    version                    Print version
+    completions <shell>        Generate shell completions (bash, zsh, fish)
+    help [command]             Show help [for COMMAND]
+
+  Options:
+    --scope SCOPE Target scope: user (default), project, local, system
+    --overwrite   Replace existing verbs instead of appending
+    --force       Skip safety guards (re-apply or remove untracked packs)
+    --all         Operate on all tracked packs (remove/update) or all scopes (status)
+    --applied     Filter list to only applied packs (--scope filters to one scope)
+    --dry-run     Show what would change without writing anything
+    -v, --verbose Show detailed output
+    -q, --quiet   Suppress non-error output
+    --json        Output as JSON
+    --no-color    Disable color output
+    -n COUNT      Number of verbs to preview
+    -V, --version Print version
+    -h, --help    Show this help message
+
+  Environment:
+    NO_COLOR          Disable color output when set (any value)
+    CLAUDE_CONFIG_DIR Override Claude Code's config directory (default: ~/.claude)
+HELP
+
+# --- I/O helpers ---------------------------------------------------------
+
+$quiet = false
+
+def say(msg = '')
+  puts msg unless $quiet
+end
+
+def print_json(data)
+  puts JSON.pretty_generate(data)
+end
+
+def print_ok(msg)
+  puts Color.green("✓ #{msg}") unless $quiet
+end
+
+def print_error(msg)
+  warn Color.red_err("✗ #{msg}")
+end
+
+def no_args!(pack, subcommand)
+  return unless pack
+
+  warn "Warning: '#{subcommand}' takes no arguments — ignoring '#{pack}'."
+end
+
+def warn_unused_flags(subcommand, explicit)
+  valid = VALID_OPTIONS[subcommand] || []
+  (explicit - valid).each do |flag|
+    warn "Warning: --#{flag.to_s.tr('_', '-')} has no effect on '#{subcommand}'."
+  end
+end
+
+# --- File helpers --------------------------------------------------------
+
+def settings_path(scope)
+  SCOPES[scope] || abort("Unknown scope '#{scope}'. Valid scopes: #{SCOPES.keys.join(', ')}")
+end
+
+def read_json(path)
+  return nil unless File.exist?(path)
+  abort("File too large to read: #{path}") if File.size(path) > MAX_FILE_SIZE
+
+  JSON.parse(File.read(path))
+rescue JSON::ParserError => e
+  abort("Failed to parse #{path}: #{e.message}")
+end
+
+def safe_read_json(path)
+  return [nil, nil] unless File.exist?(path)
+  return [nil, "File too large: #{path}"] if File.size(path) > MAX_FILE_SIZE
+
+  [JSON.parse(File.read(path)), nil]
+rescue JSON::ParserError => e
+  [nil, e.message]
+end
+
+def write_json(path, data)
+  FileUtils.mkdir_p(File.dirname(path))
+  tmp = "#{path}.tmp"
+  File.write(tmp, JSON.pretty_generate(data) + "\n")
+  FileUtils.mv(tmp, path)
+rescue SystemCallError => e
+  File.delete(tmp) rescue nil
+  abort("Failed to write #{path}: #{e.message}")
+end
+
+def valid_pack_name?(name)
+  name.match?(PACK_NAME_PATTERN)
+end
+
+def validate_pack_name!(name)
+  return if valid_pack_name?(name)
+
+  abort("Invalid pack name '#{name}'. Names may only contain letters, numbers, hyphens and underscores.")
+end
+
+def safe_pack_path(name)
+  validate_pack_name!(name)
+  path = File.expand_path(File.join(PACKS_DIR, "#{name}.json"))
+  abort("Invalid pack path.") unless path.start_with?(PACKS_DIR + File::SEPARATOR)
+
+  path
+end
+
+def read_settings(scope)
+  read_json(settings_path(scope)) || {}
+end
+
+def write_settings(scope, settings)
+  write_json(settings_path(scope), settings)
+end
+
+def read_pack(name)
+  read_pack_data(name)['verbs']
+end
+
+def available_packs
+  Dir[File.join(PACKS_DIR, '*.json')]
+    .map    { |f| File.basename(f, '.json') }
+    .select { |n| n.match?(PACK_NAME_PATTERN) }
+    .sort
+end
+
+def read_pack_data(name)
+  path = safe_pack_path(name)
+  abort("Pack '#{name}' not found. Run `spinpacks list` to see available packs.") unless File.exist?(path)
+  data = read_json(path)
+  abort("Pack '#{name}' is invalid: expected a JSON object with a 'verbs' array.") unless data.is_a?(Hash)
+  abort("Pack '#{name}' is invalid: 'verbs' must be an array.") unless data['verbs'].is_a?(Array)
+  abort("Pack '#{name}' is invalid: all 'verbs' entries must be strings.") unless data['verbs'].all? { |v| v.is_a?(String) }
+  data
+end
+
+META_FIELDS = %w[description author tags].freeze
+
+def read_meta(name)
+  data, error = safe_read_json(safe_pack_path(name))
+  warn "Warning: could not read pack '#{name}': #{error}" if error
+  data.is_a?(Hash) ? data.slice(*META_FIELDS) : {}
+end
+
+def read_state
+  read_json(STATE_FILE) || {}
+end
+
+def write_state(state)
+  write_json(STATE_FILE, state)
+end
+
+def migrate_scope(entries)
+  return entries if entries.is_a?(Hash)
+
+  Array(entries).each_with_object({}) { |p, h| h[p] = 'append' }
+end
+
+def track_pack(pack, scope, merge_mode)
+  state              = read_state
+  state[scope]       = migrate_scope(state[scope])
+  state[scope][pack] = merge_mode
+  write_state(state)
+end
+
+def untrack_pack(pack, scope)
+  state        = read_state
+  state[scope] = migrate_scope(state[scope])
+  state[scope].delete(pack)
+  write_state(state)
+end
+
+def tracked_packs(scope)
+  migrate_scope(read_state[scope]).keys
+end
+
+def pack_merge_mode(pack, scope)
+  migrate_scope(read_state[scope])[pack] || 'append'
+end
+
+# --- Commands ------------------------------------------------------------
+
+def cmd_list(verbose:, json:, applied: false, scope: nil)
+  packs = available_packs
+  if applied
+    scopes_to_check = scope ? [scope] : SCOPES.keys
+    applied_set     = scopes_to_check.flat_map { |s| tracked_packs(s) }.uniq
+    packs           = packs.select { |p| applied_set.include?(p) }
+  end
+
+  if json
+    if verbose
+      data = packs.map do |p|
+        raw, error = safe_read_json(safe_pack_path(p))
+        if error
+          { name: p, error: error }
+        else
+          verbs = raw.is_a?(Hash) ? Array(raw['verbs']) : []
+          { name: p, verb_count: verbs.length }
+        end
+      end
+      print_json(data)
+    else
+      print_json(packs)
+    end
+    return
+  end
+
+  if packs.empty?
+    say(applied ? "No packs currently applied." : "No packs available.")
+    return
+  end
+
+  packs.each do |p|
+    if verbose
+      raw, error = safe_read_json(safe_pack_path(p))
+      if error
+        say "#{Color.bold(p)} #{Color.red("(unreadable: #{error})")}"
+      else
+        verbs = raw.is_a?(Hash) ? Array(raw['verbs']) : []
+        desc  = raw.is_a?(Hash) && raw['description'] ? " — #{raw['description']}" : ''
+        say "#{Color.bold(p)} (#{verbs.length} verbs)#{Color.dim(desc)}"
+      end
+    else
+      say Color.bold(p)
+    end
+  end
+end
+
+def cmd_apply(pack, scope:, merge_mode:, force:, dry_run:, verbose:, json:)
+  unless force
+    abort("Pack '#{pack}' is already applied to #{scope} scope. Use --force to re-apply.") if tracked_packs(scope).include?(pack)
+  end
+
+  verbs        = read_pack(pack)
+  settings     = read_settings(scope)
+  raw          = settings.dig('spinnerVerbs', 'verbs')
+  existing     = raw.is_a?(Array) ? raw : []
+  spinner_mode = settings.key?('spinnerVerbs') ? settings.dig('spinnerVerbs', 'mode') : 'replace'
+  new_verbs    = merge_mode == 'append' ? (existing + verbs).uniq : verbs
+  added        = new_verbs - existing
+
+  # When --overwrite, other tracked packs lose their verbs — collect them for cleanup
+  displaced = merge_mode == 'replace' ? tracked_packs(scope).reject { |p| p == pack } : []
+
+  if dry_run
+    result = { dry_run: true, pack: pack, scope: scope, would_add: added.length, verb_count: new_verbs.length }
+    result[:would_untrack] = displaced unless displaced.empty?
+    return result if json == :collect
+    if json
+      print_json(result)
+    else
+      say Color.yellow("Would apply '#{Color.bold(pack)}' to #{scope} scope — #{new_verbs.length} verbs (#{added.length} new)")
+      say Color.yellow("  Would untrack: #{displaced.join(', ')} (--overwrite replaces all verbs)") unless displaced.empty?
+      if verbose && !added.empty?
+        shown = added.first(10)
+        say "Would add #{added.length} verb(s):"
+        shown.each { |v| say Color.green("  + #{v}") }
+        say Color.dim("  ... and #{added.length - shown.length} more") if added.length > shown.length
+      end
+    end
+    return
+  end
+
+  new_sv = { 'verbs' => new_verbs }
+  new_sv['mode'] = spinner_mode if spinner_mode
+  settings['spinnerVerbs'] = new_sv
+  write_settings(scope, settings)
+  track_pack(pack, scope, merge_mode)
+
+  unless displaced.empty?
+    displaced.each { |p| untrack_pack(p, scope) }
+    warn "Warning: untracked #{displaced.join(', ')} — their verbs were replaced by --overwrite."
+  end
+
+  result = { success: true, pack: pack, scope: scope, verb_count: new_verbs.length, added: added.length }
+  result[:untracked] = displaced unless displaced.empty?
+  return result if json == :collect
+  if json
+    print_json(result)
+    return
+  end
+
+  say Color.green("Applied '#{Color.bold(pack)}' to #{scope} scope — #{new_verbs.length} verbs active")
+
+  if verbose && !added.empty?
+    shown = added.first(10)
+    say "Added #{added.length} verb(s):"
+    shown.each { |v| say Color.green("  + #{v}") }
+    say Color.dim("  ... and #{added.length - shown.length} more") if added.length > shown.length
+  end
+end
+
+def cmd_remove(pack, scope:, force:, all:, dry_run:, verbose:, json:)
+  if all
+    warn "Warning: pack name '#{pack}' ignored because --all was given." if pack
+    packs = tracked_packs(scope)
+    abort("No packs tracked for #{scope} scope.") if packs.empty?
+    if json
+      results = packs.map { |p| cmd_remove(p, scope: scope, force: force, all: false, dry_run: dry_run, verbose: false, json: :collect) }
+      print_json(results)
+    else
+      packs.each { |p| cmd_remove(p, scope: scope, force: force, all: false, dry_run: dry_run, verbose: verbose, json: false) }
+    end
+    return
+  end
+
+  unless force
+    abort("Pack '#{pack}' is not applied to #{scope} scope. Use --force to remove anyway.") unless tracked_packs(scope).include?(pack)
+  end
+
+  pack_path = safe_pack_path(pack)
+
+  # Nothing to do: pack not tracked and file not found
+  if force && !tracked_packs(scope).include?(pack) && !File.exist?(pack_path)
+    abort("Pack '#{pack}' is not tracked in #{scope} scope and no pack file was found — nothing to remove.")
+  end
+
+  if !File.exist?(pack_path)
+    warn "Warning: Pack file for '#{pack}' not found — removing from tracking only."
+    verbs_to_remove = []
+  else
+    verbs_to_remove = read_pack(pack)
+  end
+
+  settings         = read_settings(scope)
+  raw              = settings.dig('spinnerVerbs', 'verbs')
+  existing         = raw.is_a?(Array) ? raw : []
+  spinner_mode     = settings.dig('spinnerVerbs', 'mode')
+  remaining        = existing - verbs_to_remove
+  actually_removed = existing - remaining
+
+  if dry_run
+    result = { dry_run: true, pack: pack, scope: scope, would_remove: actually_removed.length, verb_count: remaining.length }
+    return result if json == :collect
+    if json
+      print_json(result)
+    else
+      say Color.yellow("Would remove '#{Color.bold(pack)}' from #{scope} scope — #{actually_removed.length} removed, #{remaining.length} remaining")
+      if verbose && !actually_removed.empty?
+        shown = actually_removed.first(10)
+        say "Would remove #{actually_removed.length} verb(s):"
+        shown.each { |v| say Color.red("  - #{v}") }
+        say Color.dim("  ... and #{actually_removed.length - shown.length} more") if actually_removed.length > shown.length
+      end
+    end
+    return
+  end
+
+  # Preserve an explicitly set mode even when the verb list becomes empty
+  if remaining.empty? && spinner_mode.nil?
+    settings.delete('spinnerVerbs')
+  elsif remaining.empty?
+    settings['spinnerVerbs'] = { 'mode' => spinner_mode, 'verbs' => [] }
+  else
+    new_sv = { 'verbs' => remaining }
+    new_sv['mode'] = spinner_mode if spinner_mode
+    settings['spinnerVerbs'] = new_sv
+  end
+
+  write_settings(scope, settings)
+  untrack_pack(pack, scope)
+
+  result = { success: true, pack: pack, scope: scope, verb_count: remaining.length, removed: actually_removed.length }
+  return result if json == :collect
+  if json
+    print_json(result)
+    return
+  end
+
+  say Color.green("Removed '#{Color.bold(pack)}' from #{scope} scope — #{remaining.length} verbs remaining")
+
+  if verbose && !actually_removed.empty?
+    shown = actually_removed.first(10)
+    say "Removed #{actually_removed.length} verb(s):"
+    shown.each { |v| say Color.red("  - #{v}") }
+    say Color.dim("  ... and #{actually_removed.length - shown.length} more") if actually_removed.length > shown.length
+  end
+end
+
+def cmd_update(pack, scope:, dry_run:, verbose:, json:)
+  tracked = migrate_scope(read_state[scope])
+  packs   = pack ? [pack] : tracked.keys
+  abort("No packs tracked for #{scope} scope. Run `spinpacks apply <pack>` first.") if packs.empty?
+
+  if pack && !tracked.key?(pack)
+    abort("Pack '#{pack}' is not tracked for #{scope} scope. Run `spinpacks apply #{pack}` first.")
+  end
+
+  if json
+    results = packs.map { |p| cmd_apply(p, scope: scope, merge_mode: tracked[p] || 'append', force: true, dry_run: dry_run, verbose: false, json: :collect) }
+    print_json(results)
+  else
+    packs.each { |p| cmd_apply(p, scope: scope, merge_mode: tracked[p] || 'append', force: true, dry_run: dry_run, verbose: verbose, json: false) }
+  end
+end
+
+def status_snapshot(scope, verbose:)
+  path         = settings_path(scope)
+  settings     = read_settings(scope)
+  raw          = settings.dig('spinnerVerbs', 'verbs')
+  verbs        = raw.is_a?(Array) ? raw : []
+  spinner_mode = settings.dig('spinnerVerbs', 'mode') || (verbs.empty? ? 'n/a' : 'not set')
+  packs        = tracked_packs(scope)
+  d            = { scope: scope, path: path, packs: packs, verb_count: verbs.length, mode: spinner_mode }
+  d[:verbs]    = verbs if verbose
+  d
+end
+
+def cmd_status(scope:, verbose:, json:, all_scopes: false)
+  if all_scopes
+    if json
+      print_json(SCOPES.keys.map { |s| status_snapshot(s, verbose: verbose) })
+    else
+      SCOPES.keys.each_with_index do |s, i|
+        say '' if i > 0
+        cmd_status(scope: s, verbose: verbose, json: false)
+      end
+    end
+    return
+  end
+
+  path         = settings_path(scope)
+  settings     = read_settings(scope)
+  raw          = settings.dig('spinnerVerbs', 'verbs')
+  verbs        = raw.is_a?(Array) ? raw : []
+  spinner_mode = settings.dig('spinnerVerbs', 'mode') || (verbs.empty? ? 'n/a' : 'not set')
+  packs        = tracked_packs(scope)
+
+  if json
+    data = { scope: scope, path: path, packs: packs, verb_count: verbs.length, mode: spinner_mode }
+    data[:verbs] = verbs if verbose
+    print_json(data)
+    return
+  end
+
+  say "#{Color.cyan('Scope')} : #{scope} (#{path})"
+  say "#{Color.cyan('Packs')} : #{packs.empty? ? Color.dim('none') : packs.map { |p| Color.bold(p) }.join(', ')}"
+  say "#{Color.cyan('Verbs')} : #{verbs.empty? ? Color.dim('none') : "#{verbs.length} active"}"
+  say "#{Color.cyan('Mode')}  : #{verbs.empty? ? Color.dim(spinner_mode) : spinner_mode}"
+
+  if verbose && !verbs.empty?
+    say "Active verbs:"
+    verbs.each { |v| say "  #{v}" }
+  end
+end
+
+def cmd_mode(mode_value, scope:, json:)
+  unless mode_value
+    settings     = read_settings(scope)
+    verbs        = (settings.dig('spinnerVerbs', 'verbs') || [])
+    spinner_mode = settings.dig('spinnerVerbs', 'mode') || (verbs.empty? ? 'n/a' : 'not set')
+
+    if json
+      print_json({ scope: scope, mode: spinner_mode })
+    else
+      say "#{Color.cyan(scope)} scope: spinnerVerbs.mode = #{Color.bold(spinner_mode)}"
+    end
+
+    return
+  end
+
+  abort("Mode must be 'replace' or 'append'.") unless %w[replace append].include?(mode_value)
+
+  settings = read_settings(scope)
+  settings['spinnerVerbs'] ||= { 'verbs' => [] }
+  settings['spinnerVerbs']['mode'] = mode_value
+  write_settings(scope, settings)
+
+  if json
+    print_json({ success: true, scope: scope, mode: mode_value })
+  else
+    say Color.green("Set spinnerVerbs.mode to '#{Color.bold(mode_value)}' in #{scope} scope")
+  end
+end
+
+def cmd_sample(pack, count:, json:)
+  verbs  = read_pack(pack)
+  sample = verbs.sample([count, verbs.length].min)
+
+  if json
+    print_json(sample)
+  else
+    sample.each { |v| puts v }
+  end
+end
+
+def cmd_info(pack, json:, verbose: false)
+  data  = read_pack_data(pack)
+  verbs = data['verbs']
+  meta  = data.slice(*META_FIELDS)
+
+  if json
+    result = { pack: pack, verb_count: verbs.length }
+    result[verbose ? :verbs : :sample] = verbose ? verbs : verbs.sample([3, verbs.length].min)
+    result[:meta] = meta unless meta.empty?
+    print_json(result)
+    return
+  end
+
+  say "#{Color.cyan('Pack')}   : #{Color.bold(pack)}"
+  say "#{Color.cyan('Desc')}   : #{meta['description']}" if meta['description']
+  if meta['author'].is_a?(Hash)
+    say "#{Color.cyan('Author')} : #{meta['author']['name']}" if meta['author']['name']
+    say "#{Color.cyan('URL')}    : #{meta['author']['url']}"  if meta['author']['url']
+  end
+  say "#{Color.cyan('Tags')}   : #{meta['tags'].join(', ')}" if meta['tags']&.any?
+  say "#{Color.cyan('Verbs')}  : #{verbs.length}"
+
+  if verbose
+    verbs.each { |v| say "  #{v}" }
+  else
+    say "#{Color.cyan('Sample')} :"
+    verbs.sample([3, verbs.length].min).each { |v| say "  #{v}" }
+  end
+end
+
+def cmd_search(text, json:, verbose: false)
+  query   = text.downcase
+  matches = available_packs.each_with_object([]) do |pack, arr|
+    raw, = safe_read_json(safe_pack_path(pack))
+
+    by_name = pack.include?(query)
+    by_meta = raw.is_a?(Hash) && (
+      raw['description']&.downcase&.include?(query) ||
+      raw['tags']&.any? { |t| t.downcase.include?(query) }
+    )
+    hits = raw.is_a?(Hash) && raw['verbs'].is_a?(Array) ?
+           raw['verbs'].select { |v| v.is_a?(String) && v.downcase.include?(query) } : []
+
+    arr << { pack: pack, hits: hits } if by_name || by_meta || hits.any?
+  end
+
+  if json
+    data = verbose ? matches.map { |m| { pack: m[:pack], matches: m[:hits] } } : matches.map { |m| m[:pack] }
+    print_json(data)
+    return
+  end
+
+  if matches.empty?
+    say "No packs found matching '#{text}'."
+    return
+  end
+
+  matches.each do |m|
+    say Color.bold(m[:pack])
+    next unless verbose && m[:hits].any?
+
+    shown = m[:hits].first(5)
+    shown.each { |v| say "  #{v}" }
+    say Color.dim("  ... and #{m[:hits].length - shown.length} more") if m[:hits].length > shown.length
+  end
+end
+
+def cmd_doctor(json:)
+  issues = []
+  oks    = []
+  state  = {}
+
+  data, error = safe_read_json(STATE_FILE)
+  if error
+    issues << "State file is corrupted or too large — delete #{STATE_FILE} to reset (#{error})"
+  elsif data.nil?
+    oks << "State file not yet created (no packs applied)"
+  else
+    state = data
+    oks << "State file is valid (#{STATE_FILE})"
+  end
+
+  SCOPES.each do |scope, path|
+    packs = migrate_scope(state[scope]).keys
+    next if packs.empty?
+
+    data, error = safe_read_json(path)
+    if error
+      issues << "#{scope} settings file is corrupted or too large: #{error}"
+    elsif data.nil?
+      issues << "#{scope} settings file missing but has tracked packs: #{packs.join(', ')}"
+    else
+      oks << "#{scope} settings file is valid JSON"
+    end
+
+    packs.each do |pack|
+      unless valid_pack_name?(pack)
+        issues << "Tracked pack '#{pack}' has an invalid name in state file"
+        next
+      end
+
+      pack_file = safe_pack_path(pack)
+      if File.exist?(pack_file)
+        oks << "Pack '#{pack}' exists"
+      else
+        issues << "Tracked pack '#{pack}' no longer exists in packs directory"
+      end
+    end
+  end
+
+  if json
+    print_json({ healthy: issues.empty?, ok: oks, issues: issues })
+    exit(issues.empty? ? 0 : 1)
+  end
+
+  oks.each    { |msg| print_ok(msg) }
+  issues.each { |msg| print_error(msg) }
+
+  if issues.empty?
+    say Color.green("Everything looks good.")
+  else
+    warn Color.red_err("#{issues.length} issue(s) found.")
+    exit 1
+  end
+end
+
+def cmd_completions(shell)
+  abort("Usage: spinpacks completions <shell>\nSupported: #{COMPLETIONS.keys.join(', ')}") unless shell
+  script = COMPLETIONS[shell]
+  abort("Unsupported shell '#{shell}'. Supported: #{COMPLETIONS.keys.join(', ')}") unless script
+
+  print script
+end
+
+def cmd_help(command)
+  unless command
+    print HELP_TEXT
+    return
+  end
+
+  help = COMMAND_HELP[command]
+
+  if help
+    print help
+  else
+    warn "Error: Unknown command '#{command}'."
+    exit 1
+  end
+end
+
+# --- Entrypoint ----------------------------------------------------------
+
+case ARGV.first
+when '-V', '--version' then puts VERSION; exit
+when '-h', '--help'    then print HELP_TEXT; exit
+end
+
+subcommand = ARGV.shift
+options    = { scope: 'user', overwrite: false, force: false, all: false, dry_run: false,
+               verbose: false, quiet: false, json: false, no_color: false, count: 1,
+               applied: false }
+explicit   = []
+
+begin
+  OptionParser.new do |opts|
+    opts.on('--scope SCOPE')     { |v| options[:scope] = v;         explicit << :scope }
+    opts.on('--overwrite')       { options[:overwrite] = true;       explicit << :overwrite }
+    opts.on('--force')           { options[:force] = true;           explicit << :force }
+    opts.on('--all')             { options[:all] = true;             explicit << :all }
+    opts.on('--dry-run')         { options[:dry_run] = true;         explicit << :dry_run }
+    opts.on('--applied')         { options[:applied] = true;         explicit << :applied }
+    opts.on('-v', '--verbose')   { options[:verbose] = true;         explicit << :verbose }
+    opts.on('-q', '--quiet')     { options[:quiet] = true;           explicit << :quiet }
+    opts.on('--json')            { options[:json] = true;            explicit << :json }
+    opts.on('--no-color')        { options[:no_color] = true;        explicit << :no_color }
+    opts.on('-n COUNT', Integer) { |v| options[:count] = v;          explicit << :count }
+    opts.on('-V', '--version')   { puts VERSION; exit }
+    opts.on('-h', '--help')      { print HELP_TEXT; exit }
+  end.parse!(ARGV)
+rescue OptionParser::InvalidOption, OptionParser::AmbiguousOption => e
+  warn "Error: #{e.message}"
+  warn "Run `spinpacks help` for usage."
+  exit 1
+end
+
+if explicit.include?(:count) && options[:count] < 1
+  abort("Error: -n must be 1 or greater.")
+end
+
+Color.enabled = false if options[:json] || options[:no_color]
+$quiet        = options[:quiet]
+
+warn_unused_flags(subcommand, explicit) if VALID_OPTIONS.key?(subcommand)
+
+merge_mode = options[:overwrite] ? 'replace' : 'append'
+arg        = ARGV.shift
+
+case subcommand
+when 'list', 'ls'
+  no_args!(arg, subcommand)
+  cmd_list(verbose: options[:verbose], json: options[:json], applied: options[:applied],
+           scope: explicit.include?(:scope) ? options[:scope] : nil)
+when 'apply', 'install'
+  abort("Usage: spinpacks apply <pack> [--scope SCOPE] [--overwrite] [--force] [--dry-run]") unless arg
+  cmd_apply(arg, scope: options[:scope], merge_mode: merge_mode, force: options[:force],
+                 dry_run: options[:dry_run], verbose: options[:verbose], json: options[:json])
+when 'remove', 'uninstall'
+  abort("Usage: spinpacks remove <pack> [--scope SCOPE] [--force] or --all") unless arg || options[:all]
+  cmd_remove(arg, scope: options[:scope], force: options[:force], all: options[:all],
+                  dry_run: options[:dry_run], verbose: options[:verbose], json: options[:json])
+when 'update'
+  cmd_update(arg, scope: options[:scope], dry_run: options[:dry_run],
+                  verbose: options[:verbose], json: options[:json])
+when 'status'
+  no_args!(arg, subcommand) unless options[:all]
+  cmd_status(scope: options[:scope], verbose: options[:verbose], json: options[:json],
+             all_scopes: options[:all])
+when 'mode'
+  cmd_mode(arg, scope: options[:scope], json: options[:json])
+when 'sample'
+  abort("Usage: spinpacks sample <pack> [-n COUNT]") unless arg
+  cmd_sample(arg, count: options[:count], json: options[:json])
+when 'info'
+  abort("Usage: spinpacks info <pack>") unless arg
+  cmd_info(arg, json: options[:json], verbose: options[:verbose])
+when 'search'
+  abort("Usage: spinpacks search <text>") unless arg
+  cmd_search(arg, json: options[:json], verbose: options[:verbose])
+when 'doctor'
+  no_args!(arg, subcommand)
+  cmd_doctor(json: options[:json])
+when 'completions'
+  cmd_completions(arg)
+when 'version'
+  no_args!(arg, 'version')
+  puts VERSION
+when nil
+  cmd_help(nil)
+when 'help'
+  cmd_help(arg)
+else
+  warn "Error: Unknown command '#{subcommand}'."
+  warn "Run `spinpacks help` for usage."
+  exit 1
+end
