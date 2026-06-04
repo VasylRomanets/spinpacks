@@ -5,7 +5,7 @@ require 'json'
 require 'optparse'
 require 'fileutils'
 
-VERSION           = '1.0.0'
+VERSION           = '1.1.1'
 PACKS_DIR         = File.expand_path('../packs', File.dirname(File.realpath(__FILE__)))
 STATE_FILE        = File.expand_path('~/.local/state/spinpacks/state.json')
 MAX_FILE_SIZE     = 1_048_576 # 1 MB

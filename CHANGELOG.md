@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.1] - 2026-06-05
+
+### Fixed
+- Version constant was not updated for 1.1.0 release
+
 ## [1.1.0] - 2026-06-05
 
 ### Changed
