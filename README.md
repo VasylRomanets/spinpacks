@@ -1,5 +1,9 @@
 # spinpacks
 
+<p align="left">
+  <img src=".github/assets/spinnerverb.gif" width="50%" alt="Spinner Verb">
+</p>
+
 Apply themed spinner verb packs to [Claude Code](https://claude.ai/code). Replace or extend the default loading messages with custom phrases from themed packs — currently ships with a _The Office_ pack.
 
 ```
