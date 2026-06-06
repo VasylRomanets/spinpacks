@@ -37,7 +37,17 @@ _spinpacks() {
     command) _describe 'command' commands ;;
     args)
       case $words[1] in
-        apply|install|sample) _spinpacks_packs ;;
+        apply|install)
+          _arguments \
+            '--scope[Target scope]:scope:(user project local managed)' \
+            '--force[Skip safety guards]' \
+            '--dry-run[Show what would change without writing]' \
+            '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
+            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+            '--json[Output as JSON]' \
+            '1: :_spinpacks_packs'
+          ;;
+        sample) _spinpacks_packs ;;
         info)
           _arguments \
             '(-v --verbose)'{-v,--verbose}'[List all verbs]' \
@@ -45,10 +55,20 @@ _spinpacks() {
             '--json[Output as JSON]' \
             '1: :_spinpacks_packs'
           ;;
-        remove|update)
+        remove|uninstall)
           _arguments \
             '--all[Operate on all tracked packs]' \
             '--force[Skip safety guards]' \
+            '--dry-run[Show what would change without writing]' \
+            '--scope[Target scope]:scope:(user project local managed)' \
+            '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
+            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+            '--json[Output as JSON]' \
+            '1: :_spinpacks_packs'
+          ;;
+        update)
+          _arguments \
+            '--all[Operate on all tracked packs]' \
             '--dry-run[Show what would change without writing]' \
             '--scope[Target scope]:scope:(user project local managed)' \
             '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
@@ -70,17 +90,6 @@ _spinpacks() {
             '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]' \
             '1: :'
-          ;;
-        uninstall)
-          _arguments \
-            '--all[Operate on all tracked packs]' \
-            '--force[Skip safety guards]' \
-            '--dry-run[Show what would change without writing]' \
-            '--scope[Target scope]:scope:(user project local managed)' \
-            '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
-            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
-            '--json[Output as JSON]' \
-            '1: :_spinpacks_packs'
           ;;
         status)
           _arguments \

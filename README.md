@@ -65,7 +65,7 @@ spinpacks remove the-office
 |---|---|
 | `list [--applied] [-v]` | List available packs; `--applied` filters to applied ones, `-v` shows verb count |
 | `apply, install <pack>` | Apply a pack to Claude Code settings |
-| `remove [<pack>]` | Remove a pack; `--all` removes every tracked pack |
+| `remove, uninstall [<pack>]` | Remove a pack; `--all` removes every tracked pack |
 | `update [<pack>]` | Re-apply pack(s) to pick up new verbs after an upgrade |
 | `status [--all]` | Show active verbs, mode, and tracked packs; `--all` shows every scope |
 | `mode [replace\|append] [--dry-run]` | Get or set `spinnerVerbs.mode` (`replace` shows only your verbs; `append` blends with Claude's built-ins) |

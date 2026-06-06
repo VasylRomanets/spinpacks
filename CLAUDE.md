@@ -37,7 +37,7 @@ The entire CLI lives in a single file: `bin/spinpacks`. It is structured top-to-
 
 These are easy to conflate:
 
-- **`merge_mode`** (`'append'`/`'replace'`) — tracked per-pack in the state file. Controls how spinpacks merges a pack's verbs with other already-applied packs' verbs. `'replace'` means the pack's verbs completely replace existing ones; other tracked packs are automatically untracked.
+- **`merge_mode`** — tracked per-pack in the state file (always `'append'`). Reserved for future use; the `'replace'` variant (where a pack's verbs would replace all others and untrack competing packs) is not yet implemented. `migrate_scope` uses it to convert the legacy array-of-names state format on read.
 - **`spinnerVerbs.mode`** — written to Claude Code's `settings.json`. Controls whether Claude Code blends custom verbs with its built-ins (`append`) or shows only custom verbs (`replace`). Managed by the `mode` command. When `spinnerVerbs` doesn't exist yet, `cmd_apply` defaults this to `'replace'`.
 
 ## Pack format

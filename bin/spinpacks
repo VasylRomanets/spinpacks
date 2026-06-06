@@ -55,7 +55,7 @@ VALID_OPTIONS = {
   'info'        => %i[verbose quiet json no_color],
   'search'      => %i[verbose quiet json no_color],
   'doctor'      => %i[quiet json no_color],
-  'completions' => [],
+  'completions' => %i[no_color],
   'version'     => %i[json],
   'help'        => %i[json],
 }.freeze
@@ -129,7 +129,17 @@ ZSH_COMPLETION = <<~'ZSH'
       command) _describe 'command' commands ;;
       args)
         case $words[1] in
-          apply|install|sample) _spinpacks_packs ;;
+          apply|install)
+            _arguments \
+              '--scope[Target scope]:scope:(user project local managed)' \
+              '--force[Skip safety guards]' \
+              '--dry-run[Show what would change without writing]' \
+              '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
+              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+              '--json[Output as JSON]' \
+              '1: :_spinpacks_packs'
+            ;;
+          sample) _spinpacks_packs ;;
           info)
             _arguments \
               '(-v --verbose)'{-v,--verbose}'[List all verbs]' \
@@ -137,10 +147,20 @@ ZSH_COMPLETION = <<~'ZSH'
               '--json[Output as JSON]' \
               '1: :_spinpacks_packs'
             ;;
-          remove|update)
+          remove|uninstall)
             _arguments \
               '--all[Operate on all tracked packs]' \
               '--force[Skip safety guards]' \
+              '--dry-run[Show what would change without writing]' \
+              '--scope[Target scope]:scope:(user project local managed)' \
+              '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
+              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+              '--json[Output as JSON]' \
+              '1: :_spinpacks_packs'
+            ;;
+          update)
+            _arguments \
+              '--all[Operate on all tracked packs]' \
               '--dry-run[Show what would change without writing]' \
               '--scope[Target scope]:scope:(user project local managed)' \
               '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
@@ -162,17 +182,6 @@ ZSH_COMPLETION = <<~'ZSH'
               '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]' \
               '1: :'
-            ;;
-          uninstall)
-            _arguments \
-              '--all[Operate on all tracked packs]' \
-              '--force[Skip safety guards]' \
-              '--dry-run[Show what would change without writing]' \
-              '--scope[Target scope]:scope:(user project local managed)' \
-              '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
-              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
-              '--json[Output as JSON]' \
-              '1: :_spinpacks_packs'
             ;;
           status)
             _arguments \
@@ -216,7 +225,7 @@ BASH_COMPLETION = <<~'BASH'
     esac
 
     if [[ "$cur" == -* ]]; then
-      COMPREPLY=($(compgen -W "--scope --force --all --applied --dry-run -v --verbose -q --quiet --json --no-color -V --version -h --help" -- "$cur"))
+      COMPREPLY=($(compgen -W "--scope --force --all --applied --dry-run -v --verbose -q --quiet --json --no-color -n -V --version -h --help" -- "$cur"))
     fi
   }
 
@@ -495,7 +504,8 @@ end
 def warn_unused_flags(subcommand, explicit)
   valid = VALID_OPTIONS[subcommand] || []
   (explicit - valid).each do |flag|
-    warn "Warning: --#{flag.to_s.tr('_', '-')} has no effect on '#{subcommand}'."
+    display = flag == :count ? '-n' : "--#{flag.to_s.tr('_', '-')}"
+    warn "Warning: #{display} has no effect on '#{subcommand}'."
   end
 end
 
@@ -617,6 +627,7 @@ end
 # --- Commands ------------------------------------------------------------
 
 def cmd_list(verbose:, json:, applied: false, scope: nil)
+  warn "Warning: --scope has no effect without --applied." if scope && !applied
   packs = available_packs
   if applied
     scopes_to_check = scope ? [scope] : SCOPES.keys
@@ -803,7 +814,11 @@ def cmd_remove(pack, scope:, force:, all:, dry_run:, verbose:, json:)
   end
 end
 
-def cmd_update(pack, scope:, dry_run:, verbose:, json:)
+def cmd_update(pack, scope:, all:, dry_run:, verbose:, json:)
+  if pack && all
+    warn "Warning: pack name '#{pack}' ignored because --all was given."
+    pack = nil
+  end
   tracked = migrate_scope(read_state[scope])
   packs   = pack ? [pack] : tracked.keys
   abort("No packs tracked for #{scope} scope. Run `spinpacks apply <pack>` first.") if packs.empty?
@@ -914,7 +929,7 @@ def cmd_mode(mode_value, scope:, dry_run:, json:)
   end
 
   settings = read_settings(scope)
-  settings['spinnerVerbs'] ||= { 'verbs' => [] }
+  settings['spinnerVerbs'] ||= {}
   settings['spinnerVerbs']['mode'] = mode_value
   write_settings(scope, settings)
 
@@ -1160,9 +1175,10 @@ when 'remove', 'uninstall'
   cmd_remove(arg, scope: options[:scope], force: options[:force], all: options[:all],
                   dry_run: options[:dry_run], verbose: options[:verbose], json: options[:json])
 when 'update'
-  cmd_update(arg, scope: options[:scope], dry_run: options[:dry_run],
+  cmd_update(arg, scope: options[:scope], all: options[:all], dry_run: options[:dry_run],
                   verbose: options[:verbose], json: options[:json])
 when 'status'
+  warn "Warning: --scope has no effect when --all is given." if options[:all] && explicit.include?(:scope)
   no_args!(arg, subcommand) unless options[:all]
   cmd_status(scope: options[:scope], verbose: options[:verbose], json: options[:json],
              all_scopes: options[:all])
