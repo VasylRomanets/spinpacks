@@ -858,7 +858,7 @@ def cmd_status(scope:, verbose:, json:, all_scopes: false)
       .map    { |s| status_snapshot(s, verbose: verbose) }
       .reject { |s| s[:packs].empty? && s[:verb_count].zero? }
     if json
-      print_json(snapshots.empty? ? {} : snapshots)
+      print_json(snapshots)
     else
       if snapshots.empty?
         say "No packs installed in any scope."
