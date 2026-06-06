@@ -31,7 +31,7 @@ VALID_OPTIONS = {
   'uninstall'   => %i[scope force all dry_run verbose quiet json no_color],
   'update'      => %i[scope all dry_run verbose quiet json no_color],
   'status'      => %i[scope all verbose quiet json no_color],
-  'mode'        => %i[scope quiet json no_color],
+  'mode'        => %i[scope dry_run quiet json no_color],
   'sample'      => %i[count json no_color],
   'info'        => %i[verbose quiet json no_color],
   'search'      => %i[verbose quiet json no_color],
@@ -316,16 +316,18 @@ COMMAND_HELP = {
         spinpacks status --json
   HELP
   'mode'    => <<~HELP,
-    mode [replace|append] [--scope SCOPE] [-q] [--json]
+    mode [replace|append] [--scope SCOPE] [--dry-run] [-q] [--json]
       Get or set Claude Code's spinnerVerbs.mode.
         replace — show only your custom verbs
         append  — blend your verbs with Claude's built-in ones
       Omit the value to print the current mode.
+      Use --dry-run to preview the change without writing.
 
       Examples:
         spinpacks mode
         spinpacks mode replace
         spinpacks mode append --scope project
+        spinpacks mode replace --dry-run
   HELP
   'sample'      => <<~HELP,
     sample <pack> [-n COUNT] [--json]
@@ -869,7 +871,7 @@ def cmd_status(scope:, verbose:, json:, all_scopes: false)
   end
 end
 
-def cmd_mode(mode_value, scope:, json:)
+def cmd_mode(mode_value, scope:, dry_run:, json:)
   unless mode_value
     settings     = read_settings(scope)
     verbs        = (settings.dig('spinnerVerbs', 'verbs') || [])
@@ -885,6 +887,15 @@ def cmd_mode(mode_value, scope:, json:)
   end
 
   abort("Mode must be 'replace' or 'append'.") unless %w[replace append].include?(mode_value)
+
+  if dry_run
+    if json
+      print_json({ dry_run: true, scope: scope, mode: mode_value })
+    else
+      say Color.yellow("Would set spinnerVerbs.mode to '#{Color.bold(mode_value)}' in #{scope} scope")
+    end
+    return
+  end
 
   settings = read_settings(scope)
   settings['spinnerVerbs'] ||= { 'verbs' => [] }
@@ -1127,7 +1138,7 @@ when 'status'
   cmd_status(scope: options[:scope], verbose: options[:verbose], json: options[:json],
              all_scopes: options[:all])
 when 'mode'
-  cmd_mode(arg, scope: options[:scope], json: options[:json])
+  cmd_mode(arg, scope: options[:scope], dry_run: options[:dry_run], json: options[:json])
 when 'sample'
   abort("Usage: spinpacks sample <pack> [-n COUNT]") unless arg
   cmd_sample(arg, count: options[:count], json: options[:json])
