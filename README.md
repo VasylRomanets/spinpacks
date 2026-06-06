@@ -84,7 +84,7 @@ Run `spinpacks help <command>` for detailed usage of any command.
 | Option | Description |
 |---|---|
 | `--scope SCOPE` | Target scope: `user` (default), `project`, `local`, `managed` |
-| `--force` | Skip safety guards (reinstall or remove untracked packs) |
+| `--force` | Skip safety guards (remove untracked packs) |
 | `--all` | Operate on all tracked packs (`uninstall`/`update`) or show all scopes (`status`) |
 | `--installed` | Filter `list` to only installed packs |
 | `--dry-run` | Preview changes without writing anything |

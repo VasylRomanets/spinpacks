@@ -14,8 +14,6 @@ ruby bin/spinpacks <command>
 # Regenerate static completion files (required after changing commands or options)
 make completions
 
-# Audit Homebrew formula
-make audit
 ```
 
 There is no build step. No gems or external dependencies — standard library only (`json`, `optparse`, `fileutils`).
@@ -24,7 +22,7 @@ There is no build step. No gems or external dependencies — standard library on
 
 The entire CLI lives in a single file: `bin/spinpacks`. It is structured top-to-bottom:
 
-1. **Constants** — `CLAUDE_DIR` (respects `$CLAUDE_CONFIG_DIR`, falls back to `~/.claude`), `SCOPES`, `PACKS_DIR`, `STATE_FILE`, `META_FIELDS`, `ALL_COMMANDS`, `VALID_OPTIONS`
+1. **Constants** — `CLAUDE_DIR` (respects `$CLAUDE_CONFIG_DIR`, falls back to `~/.claude`), `SCOPES`, `PACKS_DIR`, `STATE_FILE`, `MAX_FILE_SIZE`, `PACK_NAME_PATTERN`, `ALL_COMMANDS`, `COMMAND_DESCRIPTIONS`, `VALID_OPTIONS`; `META_FIELDS` is defined later, just before the file helpers that use it
 2. **Color module** — TTY/stream-aware; `Color.red_err` checks `$stderr.tty?`, everything else checks `$stdout.tty?`
 3. **Inline completion scripts** — ZSH/BASH/FISH heredocs; mirrored as static files in `completions/` via `make completions`
 4. **Help text** — `COMMAND_HELP` (per-command) and `HELP_TEXT` (top-level)

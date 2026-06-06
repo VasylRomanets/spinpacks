@@ -639,9 +639,9 @@ def cmd_list(verbose:, json:, installed: false, scope: nil)
   warn "Warning: --scope has no effect without --installed." if scope && !installed
   packs = available_packs
   if installed
-    scopes_to_check  = scope ? [scope] : SCOPES.keys
-    installed_set    = scopes_to_check.flat_map { |s| tracked_packs(s) }.uniq
-    packs            = packs.select { |p| installed_set.include?(p) }
+    scopes_to_check = scope ? [scope] : SCOPES.keys
+    installed_set   = scopes_to_check.flat_map { |s| tracked_packs(s) }.uniq
+    packs           = packs.select { |p| installed_set.include?(p) }
   end
 
   if json
@@ -906,8 +906,8 @@ end
 
 def cmd_mode(mode_value, scope:, dry_run:, json:)
   unless mode_value
-    settings     = read_settings(scope)
-    verbs        = (settings.dig('spinnerVerbs', 'verbs') || [])
+    settings = read_settings(scope)
+    verbs    = (settings.dig('spinnerVerbs', 'verbs') || [])
 
     if verbs.empty?
       json ? print_json({ scope: scope, mode: nil }) : say("No packs installed in #{scope} scope.")
@@ -971,14 +971,14 @@ def cmd_info(pack, json:, verbose: false)
     return
   end
 
-  say "#{Color.cyan('Pack')}   : #{Color.bold(pack)}"
-  say "#{Color.cyan('Desc')}   : #{meta['description']}" if meta['description']
+  say "#{Color.cyan('Pack')}     : #{Color.bold(pack)}"
+  say "#{Color.cyan('Desc')}     : #{meta['description']}"     if meta['description']
   if meta['author'].is_a?(Hash)
-    say "#{Color.cyan('Author')} : #{meta['author']['name']}" if meta['author']['name']
-    say "#{Color.cyan('URL')}    : #{meta['author']['url']}"  if meta['author']['url']
+    say "#{Color.cyan('Author')} : #{meta['author']['name']}"  if meta['author']['name']
+    say "#{Color.cyan('URL')}    : #{meta['author']['url']}"   if meta['author']['url']
   end
-  say "#{Color.cyan('Tags')}   : #{meta['tags'].join(', ')}" if meta['tags']&.any?
-  say "#{Color.cyan('Verbs')}  : #{verbs.length}"
+  say "#{Color.cyan('Tags')}     : #{meta['tags'].join(', ')}" if meta['tags']&.any?
+  say "#{Color.cyan('Verbs')}    : #{verbs.length}"
 
   if verbose
     verbs.each { |v| say "  #{v}" }
