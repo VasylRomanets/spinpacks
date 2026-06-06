@@ -35,6 +35,7 @@ complete -c spinpacks -l applied      -d 'Show only applied packs (list/ls)'
 complete -c spinpacks -l dry-run      -d 'Show what would change without writing'
 complete -c spinpacks -s v -l verbose -d 'Show detailed output'
 complete -c spinpacks -s q -l quiet   -d 'Suppress non-error output'
+complete -c spinpacks -s n -l count   -d 'Number of verbs to sample' -r
 complete -c spinpacks -l json         -d 'Output as JSON'
 complete -c spinpacks -l no-color     -d 'Disable color output'
 complete -c spinpacks -s V -l version -d 'Print version'

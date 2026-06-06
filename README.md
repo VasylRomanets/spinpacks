@@ -92,7 +92,7 @@ Run `spinpacks help <command>` for detailed usage of any command.
 | `-q`, `--quiet` | Suppress non-error output |
 | `--json` | Output as JSON (useful for scripting) |
 | `--no-color` | Disable color output |
-| `-n COUNT` | Number of verbs to preview |
+| `-n, --count COUNT` | Number of verbs to sample |
 
 ## Environment
 

@@ -47,7 +47,12 @@ _spinpacks() {
             '--json[Output as JSON]' \
             '1: :_spinpacks_packs'
           ;;
-        sample) _spinpacks_packs ;;
+        sample)
+          _arguments \
+            '(-n --count)'{-n,--count}'[Number of verbs to sample]:count:' \
+            '--json[Output as JSON]' \
+            '1: :_spinpacks_packs'
+          ;;
         info)
           _arguments \
             '(-v --verbose)'{-v,--verbose}'[List all verbs]' \

@@ -139,7 +139,12 @@ ZSH_COMPLETION = <<~'ZSH'
               '--json[Output as JSON]' \
               '1: :_spinpacks_packs'
             ;;
-          sample) _spinpacks_packs ;;
+          sample)
+            _arguments \
+              '(-n --count)'{-n,--count}'[Number of verbs to sample]:count:' \
+              '--json[Output as JSON]' \
+              '1: :_spinpacks_packs'
+            ;;
           info)
             _arguments \
               '(-v --verbose)'{-v,--verbose}'[List all verbs]' \
@@ -225,7 +230,7 @@ BASH_COMPLETION = <<~'BASH'
     esac
 
     if [[ "$cur" == -* ]]; then
-      COMPREPLY=($(compgen -W "--scope --force --all --applied --dry-run -v --verbose -q --quiet --json --no-color -n -V --version -h --help" -- "$cur"))
+      COMPREPLY=($(compgen -W "--scope --force --all --applied --dry-run -v --verbose -q --quiet --json --no-color -n --count -V --version -h --help" -- "$cur"))
     fi
   }
 
@@ -270,6 +275,7 @@ FISH_COMPLETION = <<~'FISH'
   complete -c spinpacks -l dry-run      -d 'Show what would change without writing'
   complete -c spinpacks -s v -l verbose -d 'Show detailed output'
   complete -c spinpacks -s q -l quiet   -d 'Suppress non-error output'
+  complete -c spinpacks -s n -l count   -d 'Number of verbs to sample' -r
   complete -c spinpacks -l json         -d 'Output as JSON'
   complete -c spinpacks -l no-color     -d 'Disable color output'
   complete -c spinpacks -s V -l version -d 'Print version'
@@ -366,6 +372,7 @@ COMMAND_HELP = {
       Examples:
         spinpacks sample the-office
         spinpacks sample the-office -n 5
+        spinpacks sample the-office --count 5
         spinpacks sample the-office --json
   HELP
   'info'        => <<~HELP,
@@ -466,7 +473,7 @@ HELP_TEXT = <<~HELP
     -q, --quiet   Suppress non-error output
     --json        Output as JSON
     --no-color    Disable color output
-    -n COUNT      Number of verbs to preview
+    -n, --count COUNT  Number of verbs to sample
     -V, --version Print version
     -h, --help    Show this help message
 
@@ -1140,7 +1147,7 @@ begin
     opts.on('-q', '--quiet')     { options[:quiet] = true;           explicit << :quiet }
     opts.on('--json')            { options[:json] = true;            explicit << :json }
     opts.on('--no-color')        { options[:no_color] = true;        explicit << :no_color }
-    opts.on('-n COUNT', Integer) { |v| options[:count] = v;          explicit << :count }
+    opts.on('-n', '--count COUNT', Integer) { |v| options[:count] = v; explicit << :count }
     opts.on('-V', '--version')   { puts VERSION; exit }
     opts.on('-h', '--help')      { print HELP_TEXT; exit }
   end.parse!(ARGV)
