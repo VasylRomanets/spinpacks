@@ -20,8 +20,6 @@ SCOPES = {
   'managed' => '/Library/Application Support/ClaudeCode/managed-settings.json'
 }.freeze
 
-ALL_COMMANDS = %w[list ls install add uninstall remove update status mode sample info show search doctor version completion help].freeze
-
 COMMAND_DESCRIPTIONS = {
   'list'       => 'List available packs',
   'ls'         => 'List available packs (alias for list)',
