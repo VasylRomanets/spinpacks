@@ -90,7 +90,14 @@ _spinpacks() {
             '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]'
           ;;
-        mode) _arguments '1: :(replace append)' ;;
+        mode)
+          _arguments \
+            '--dry-run[Show what would change without writing]' \
+            '--scope[Target scope]:scope:(user project local system)' \
+            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+            '--json[Output as JSON]' \
+            '1: :(replace append)'
+          ;;
         completions) _arguments '1: :(bash zsh fish)' ;;
       esac ;;
   esac

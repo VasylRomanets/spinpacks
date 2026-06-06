@@ -182,7 +182,14 @@ ZSH_COMPLETION = <<~'ZSH'
               '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]'
             ;;
-          mode) _arguments '1: :(replace append)' ;;
+          mode)
+            _arguments \
+              '--dry-run[Show what would change without writing]' \
+              '--scope[Target scope]:scope:(user project local system)' \
+              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
+              '--json[Output as JSON]' \
+              '1: :(replace append)'
+            ;;
           completions) _arguments '1: :(bash zsh fish)' ;;
         esac ;;
     esac
@@ -581,11 +588,6 @@ end
 
 META_FIELDS = %w[description author tags].freeze
 
-def read_meta(name)
-  data, error = safe_read_json(safe_pack_path(name))
-  warn "Warning: could not read pack '#{name}': #{error}" if error
-  data.is_a?(Hash) ? data.slice(*META_FIELDS) : {}
-end
 
 def read_state
   read_json(STATE_FILE) || {}
@@ -619,9 +621,6 @@ def tracked_packs(scope)
   migrate_scope(read_state[scope]).keys
 end
 
-def pack_merge_mode(pack, scope)
-  migrate_scope(read_state[scope])[pack] || 'append'
-end
 
 # --- Commands ------------------------------------------------------------
 
@@ -845,7 +844,7 @@ def status_snapshot(scope, verbose:)
   settings     = read_settings(scope)
   raw          = settings.dig('spinnerVerbs', 'verbs')
   verbs        = raw.is_a?(Array) ? raw : []
-  spinner_mode = settings.dig('spinnerVerbs', 'mode') || (verbs.empty? ? 'n/a' : 'not set')
+  spinner_mode = verbs.empty? ? 'n/a' : (settings.dig('spinnerVerbs', 'mode') || 'not set')
   packs        = tracked_packs(scope)
   d            = { scope: scope, path: path, packs: packs, verb_count: verbs.length, mode: spinner_mode }
   d[:verbs]    = verbs if verbose
@@ -1208,7 +1207,7 @@ when 'version'
   no_args!(arg, 'version')
   options[:json] ? print_json({ version: VERSION }) : puts(VERSION)
 when nil
-  cmd_help(nil)
+  cmd_help(nil, json: options[:json])
 when 'help'
   cmd_help(arg, json: options[:json])
 else

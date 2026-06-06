@@ -68,7 +68,7 @@ spinpacks remove the-office
 | `remove [<pack>]` | Remove a pack; `--all` removes every tracked pack |
 | `update [<pack>]` | Re-apply pack(s) to pick up new verbs after an upgrade |
 | `status [--all]` | Show active verbs, mode, and tracked packs; `--all` shows every scope |
-| `mode [replace\|append]` | Get or set `spinnerVerbs.mode` (`replace` shows only your verbs; `append` blends with Claude's built-ins) |
+| `mode [replace\|append] [--dry-run]` | Get or set `spinnerVerbs.mode` (`replace` shows only your verbs; `append` blends with Claude's built-ins) |
 | `sample <pack> [-n N]` | Print N random verbs from a pack (default: 1) |
 | `info <pack>` | Show pack metadata and a sample of verbs |
 | `search <text>` | Search packs by name, description, tags, or verb content |
