@@ -38,7 +38,7 @@ The entire CLI lives in a single file: `bin/spinpacks`. It is structured top-to-
 These are easy to conflate:
 
 - **`merge_mode`** — tracked per-pack in the state file (always `'append'`). Reserved for future use; the `'replace'` variant (where a pack's verbs would replace all others and untrack competing packs) is not yet implemented. `migrate_scope` uses it to convert the legacy array-of-names state format on read.
-- **`spinnerVerbs.mode`** — written to Claude Code's `settings.json`. Controls whether Claude Code blends custom verbs with its built-ins (`append`) or shows only custom verbs (`replace`). Managed by the `mode` command. When `spinnerVerbs` doesn't exist yet, `cmd_apply` defaults this to `'replace'`.
+- **`spinnerVerbs.mode`** — written to Claude Code's `settings.json`. Controls whether Claude Code blends custom verbs with its built-ins (`append`) or shows only custom verbs (`replace`). Managed by the `mode` command. When `spinnerVerbs` doesn't exist yet, `cmd_install` defaults this to `'replace'`.
 
 ## Pack format
 
@@ -46,7 +46,7 @@ A pack is a single JSON file in `packs/`. Required field: `verbs` (string array)
 
 ## State file
 
-Tracks which packs are applied to which scope and with which merge mode. Located at `~/.local/state/spinpacks/state.json`. Created lazily on first `apply`. Structure: `{ "user": { "the-office": "append" }, ... }`. The `migrate_scope` helper handles the old array format for backward compatibility.
+Tracks which packs are installed to which scope and with which merge mode. Located at `~/.local/state/spinpacks/state.json`. Created lazily on first `install`. Structure: `{ "user": { "the-office": "append" }, ... }`. The `migrate_scope` helper handles the old array format for backward compatibility.
 
 ## Adding a new command
 

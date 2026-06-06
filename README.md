@@ -49,7 +49,7 @@ spinpacks list
 # Install a pack into your user-wide Claude Code settings
 spinpacks install the-office
 
-# Preview verbs before applying
+# Preview verbs before installing
 spinpacks sample the-office -n 5
 
 # Check what's currently active

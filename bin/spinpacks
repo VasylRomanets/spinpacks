@@ -249,23 +249,23 @@ FISH_COMPLETION = <<~'FISH'
     not __fish_seen_subcommand_from list ls install add uninstall remove update status mode sample info show search doctor version completion help
   end
 
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a list        -d 'List available packs'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a ls          -d 'List available packs'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a install     -d 'Install a pack'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a add         -d 'Install a pack (alias for install)'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a uninstall   -d 'Remove a pack'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a remove      -d 'Remove a pack (alias for uninstall)'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a update      -d 'Reinstall packs'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a status      -d 'Show status'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a mode        -d 'Get or set mode'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a sample      -d 'Sample random verbs from a pack'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a info        -d 'Show pack details'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a show        -d 'Show pack details (alias for info)'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a search      -d 'Search packs'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a doctor      -d 'Check for problems'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a version     -d 'Print version'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a completion  -d 'Generate shell completion'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a help        -d 'Show help'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a list       -d 'List available packs'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a ls         -d 'List available packs'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a install    -d 'Install a pack'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a add        -d 'Install a pack (alias for install)'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a uninstall  -d 'Remove a pack'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a remove     -d 'Remove a pack (alias for uninstall)'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a update     -d 'Reinstall packs'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a status     -d 'Show status'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a mode       -d 'Get or set mode'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a sample     -d 'Sample random verbs from a pack'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a info       -d 'Show pack details'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a show       -d 'Show pack details (alias for info)'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a search     -d 'Search packs'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a doctor     -d 'Check for problems'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a version    -d 'Print version'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a completion -d 'Generate shell completion'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a help       -d 'Show help'
 
   complete -c spinpacks -f -n '__fish_seen_subcommand_from install add uninstall remove sample info show update' \
     -a '(__spinpacks_packs)'
@@ -472,22 +472,22 @@ HELP_TEXT = <<~HELP
     help [command]              Show help [for COMMAND]
 
   Options:
-    --scope SCOPE Target scope: user (default), project, local, managed
-    --force       Skip safety guards (reinstall or remove untracked packs)
-    --all         Operate on all tracked packs (uninstall/update) or all scopes (status)
-    --installed   Filter list to only installed packs (--scope filters to one scope)
-    --dry-run     Show what would change without writing anything
-    -v, --verbose Show detailed output
-    -q, --quiet   Suppress non-error output
-    --json        Output as JSON
-    --no-color    Disable color output
+    --scope SCOPE      Target scope: user (default), project, local, managed
+    --force            Skip safety guards (reinstall or remove untracked packs)
+    --all              Operate on all tracked packs (uninstall/update) or all scopes (status)
+    --installed        Filter list to only installed packs (--scope filters to one scope)
+    --dry-run          Show what would change without writing anything
+    -v, --verbose      Show detailed output
+    -q, --quiet        Suppress non-error output
+    --json             Output as JSON
+    --no-color         Disable color output
     -n, --count COUNT  Number of verbs to sample
-    -V, --version Print version
-    -h, --help    Show this help message
+    -V, --version      Print version
+    -h, --help         Show this help message
 
   Environment:
-    NO_COLOR          Disable color output when set (any value)
-    CLAUDE_CONFIG_DIR Override Claude Code's config directory (default: ~/.claude)
+    NO_COLOR           Disable color output when set (any value)
+    CLAUDE_CONFIG_DIR  Override Claude Code's config directory (default: ~/.claude)
 HELP
 
 # --- I/O helpers ---------------------------------------------------------
@@ -1044,7 +1044,7 @@ def cmd_doctor(json:)
   if error
     issues << "State file is corrupted or too large — delete #{STATE_FILE} to reset (#{error})"
   elsif data.nil?
-    oks << "State file not yet created (no packs applied)"
+    oks << "State file not yet created (no packs installed)"
   else
     state = data
     oks << "State file is valid (#{STATE_FILE})"
@@ -1148,18 +1148,18 @@ explicit   = []
 
 begin
   OptionParser.new do |opts|
-    opts.on('--scope SCOPE')     { |v| options[:scope] = v;         explicit << :scope }
-    opts.on('--force')           { options[:force] = true;           explicit << :force }
-    opts.on('--all')             { options[:all] = true;             explicit << :all }
-    opts.on('--dry-run')         { options[:dry_run] = true;         explicit << :dry_run }
-    opts.on('--installed')       { options[:installed] = true;       explicit << :installed }
-    opts.on('-v', '--verbose')   { options[:verbose] = true;         explicit << :verbose }
-    opts.on('-q', '--quiet')     { options[:quiet] = true;           explicit << :quiet }
-    opts.on('--json')            { options[:json] = true;            explicit << :json }
-    opts.on('--no-color')        { options[:no_color] = true;        explicit << :no_color }
-    opts.on('-n', '--count COUNT', Integer) { |v| options[:count] = v; explicit << :count }
-    opts.on('-V', '--version')   { puts VERSION; exit }
-    opts.on('-h', '--help')      { print HELP_TEXT; exit }
+    opts.on('--scope SCOPE')                { |v| options[:scope] = v;    explicit << :scope }
+    opts.on('--force')                      { options[:force] = true;     explicit << :force }
+    opts.on('--all')                        { options[:all] = true;       explicit << :all }
+    opts.on('--dry-run')                    { options[:dry_run] = true;   explicit << :dry_run }
+    opts.on('--installed')                  { options[:installed] = true; explicit << :installed }
+    opts.on('-v', '--verbose')              { options[:verbose] = true;   explicit << :verbose }
+    opts.on('-q', '--quiet')                { options[:quiet] = true;     explicit << :quiet }
+    opts.on('--json')                       { options[:json] = true;      explicit << :json }
+    opts.on('--no-color')                   { options[:no_color] = true;  explicit << :no_color }
+    opts.on('-n', '--count COUNT', Integer) { |v| options[:count] = v;    explicit << :count }
+    opts.on('-V', '--version')              { puts VERSION; exit }
+    opts.on('-h', '--help')                 { print HELP_TEXT; exit }
   end.parse!(ARGV)
 rescue OptionParser::InvalidOption, OptionParser::AmbiguousOption => e
   warn "Error: #{e.message}"
