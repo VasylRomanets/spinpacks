@@ -44,8 +44,8 @@ COMMAND_DESCRIPTIONS = {
 VALID_OPTIONS = {
   'list'        => %i[applied scope verbose quiet json no_color],
   'ls'          => %i[applied scope verbose quiet json no_color],
-  'apply'       => %i[scope overwrite force dry_run verbose quiet json no_color],
-  'install'     => %i[scope overwrite force dry_run verbose quiet json no_color],
+  'apply'       => %i[scope force dry_run verbose quiet json no_color],
+  'install'     => %i[scope force dry_run verbose quiet json no_color],
   'remove'      => %i[scope force all dry_run verbose quiet json no_color],
   'uninstall'   => %i[scope force all dry_run verbose quiet json no_color],
   'update'      => %i[scope all dry_run verbose quiet json no_color],
@@ -216,7 +216,7 @@ BASH_COMPLETION = <<~'BASH'
     esac
 
     if [[ "$cur" == -* ]]; then
-      COMPREPLY=($(compgen -W "--scope --overwrite --force --all --applied --dry-run -v --verbose -q --quiet --json --no-color -V --version -h --help" -- "$cur"))
+      COMPREPLY=($(compgen -W "--scope --force --all --applied --dry-run -v --verbose -q --quiet --json --no-color -V --version -h --help" -- "$cur"))
     fi
   }
 
@@ -255,7 +255,6 @@ FISH_COMPLETION = <<~'FISH'
   complete -c spinpacks -f -n '__fish_seen_subcommand_from completions' -a 'bash zsh fish'
 
   complete -c spinpacks -l scope        -d 'Target scope' -r -a 'user project local managed'
-  complete -c spinpacks -l overwrite    -d 'Replace existing verbs instead of appending'
   complete -c spinpacks -l force        -d 'Skip safety guards'
   complete -c spinpacks -l all          -d 'Operate on all tracked packs or show all scopes'
   complete -c spinpacks -l applied      -d 'Show only applied packs (list/ls)'
@@ -287,19 +286,15 @@ COMMAND_HELP = {
         spinpacks list -v
   HELP
   'apply'       => <<~HELP,
-    apply <pack> [--scope SCOPE] [--overwrite] [--force] [--dry-run] [-v] [-q] [--json]
+    apply <pack> [--scope SCOPE] [--force] [--dry-run] [-v] [-q] [--json]
       Apply a pack to Claude Code settings.
-      Default scope: user. Default behaviour: append (merges with existing verbs).
-      Use --overwrite to replace all existing verbs with this pack only.
-        Note: --overwrite untracks any other packs in the scope since their
-        verbs are replaced. Run `spinpacks update --all` to restore them.
+      Default scope: user. Verbs are merged with any existing verbs.
       Use --force to re-apply even if the pack is already tracked.
       Use --dry-run to preview changes without writing.
 
       Examples:
         spinpacks apply the-office
         spinpacks apply the-office --scope project
-        spinpacks apply the-office --overwrite -v
         spinpacks apply the-office --dry-run
         spinpacks apply the-office --force
   HELP
@@ -394,7 +389,7 @@ COMMAND_HELP = {
         spinpacks doctor
   HELP
   'install'     => <<~HELP,
-    install <pack> [--scope SCOPE] [--overwrite] [--force] [--dry-run] [-v] [-q] [--json]
+    install <pack> [--scope SCOPE] [--force] [--dry-run] [-v] [-q] [--json]
       Alias for apply. See `spinpacks help apply`.
   HELP
   'uninstall'   => <<~HELP,
@@ -439,7 +434,7 @@ HELP_TEXT = <<~HELP
 
   Commands:
     list, ls                   List available packs (--applied filters to applied; -v shows verb count)
-    apply, install <pack>      Apply a pack to Claude Code settings
+    apply, install <pack>      Apply a pack to Claude Code settings (merges with existing verbs)
     remove, uninstall [<pack>] Remove a pack (or --all) from Claude Code settings
     update [<pack>]            Re-apply pack(s) (all tracked if no pack given)
     status                     Show active verbs, mode and tracked packs (--all shows every scope)
@@ -454,7 +449,6 @@ HELP_TEXT = <<~HELP
 
   Options:
     --scope SCOPE Target scope: user (default), project, local, managed
-    --overwrite   Replace existing verbs instead of appending
     --force       Skip safety guards (re-apply or remove untracked packs)
     --all         Operate on all tracked packs (remove/update) or all scopes (status)
     --applied     Filter list to only applied packs (--scope filters to one scope)
@@ -671,7 +665,7 @@ def cmd_list(verbose:, json:, applied: false, scope: nil)
   end
 end
 
-def cmd_apply(pack, scope:, merge_mode:, force:, dry_run:, verbose:, json:)
+def cmd_apply(pack, scope:, force:, dry_run:, verbose:, json:)
   unless force
     abort("Pack '#{pack}' is already applied to #{scope} scope. Use --force to re-apply.") if tracked_packs(scope).include?(pack)
   end
@@ -681,21 +675,16 @@ def cmd_apply(pack, scope:, merge_mode:, force:, dry_run:, verbose:, json:)
   raw          = settings.dig('spinnerVerbs', 'verbs')
   existing     = raw.is_a?(Array) ? raw : []
   spinner_mode = settings.key?('spinnerVerbs') ? settings.dig('spinnerVerbs', 'mode') : 'replace'
-  new_verbs    = merge_mode == 'append' ? (existing + verbs).uniq : verbs
+  new_verbs    = (existing + verbs).uniq
   added        = new_verbs - existing
-
-  # When --overwrite, other tracked packs lose their verbs — collect them for cleanup
-  displaced = merge_mode == 'replace' ? tracked_packs(scope).reject { |p| p == pack } : []
 
   if dry_run
     result = { dry_run: true, pack: pack, scope: scope, would_add: added.length, verb_count: new_verbs.length }
-    result[:would_untrack] = displaced unless displaced.empty?
     return result if json == :collect
     if json
       print_json(result)
     else
       say Color.yellow("Would apply '#{Color.bold(pack)}' to #{scope} scope — #{new_verbs.length} verbs (#{added.length} new)")
-      say Color.yellow("  Would untrack: #{displaced.join(', ')} (--overwrite replaces all verbs)") unless displaced.empty?
       if verbose && !added.empty?
         shown = added.first(10)
         say "Would add #{added.length} verb(s):"
@@ -710,15 +699,9 @@ def cmd_apply(pack, scope:, merge_mode:, force:, dry_run:, verbose:, json:)
   new_sv['mode'] = spinner_mode if spinner_mode
   settings['spinnerVerbs'] = new_sv
   write_settings(scope, settings)
-  track_pack(pack, scope, merge_mode)
-
-  unless displaced.empty?
-    displaced.each { |p| untrack_pack(p, scope) }
-    warn "Warning: untracked #{displaced.join(', ')} — their verbs were replaced by --overwrite."
-  end
+  track_pack(pack, scope, 'append')
 
   result = { success: true, pack: pack, scope: scope, verb_count: new_verbs.length, added: added.length }
-  result[:untracked] = displaced unless displaced.empty?
   return result if json == :collect
   if json
     print_json(result)
@@ -832,10 +815,10 @@ def cmd_update(pack, scope:, dry_run:, verbose:, json:)
   end
 
   if json
-    results = packs.map { |p| cmd_apply(p, scope: scope, merge_mode: tracked[p] || 'append', force: true, dry_run: dry_run, verbose: false, json: :collect) }
+    results = packs.map { |p| cmd_apply(p, scope: scope, force: true, dry_run: dry_run, verbose: false, json: :collect) }
     print_json(results)
   else
-    packs.each { |p| cmd_apply(p, scope: scope, merge_mode: tracked[p] || 'append', force: true, dry_run: dry_run, verbose: verbose, json: false) }
+    packs.each { |p| cmd_apply(p, scope: scope, force: true, dry_run: dry_run, verbose: verbose, json: false) }
   end
 end
 
@@ -1128,7 +1111,7 @@ when '-h', '--help'    then print HELP_TEXT; exit
 end
 
 subcommand = ARGV.shift
-options    = { scope: 'user', overwrite: false, force: false, all: false, dry_run: false,
+options    = { scope: 'user', force: false, all: false, dry_run: false,
                verbose: false, quiet: false, json: false, no_color: false, count: 1,
                applied: false }
 explicit   = []
@@ -1136,7 +1119,6 @@ explicit   = []
 begin
   OptionParser.new do |opts|
     opts.on('--scope SCOPE')     { |v| options[:scope] = v;         explicit << :scope }
-    opts.on('--overwrite')       { options[:overwrite] = true;       explicit << :overwrite }
     opts.on('--force')           { options[:force] = true;           explicit << :force }
     opts.on('--all')             { options[:all] = true;             explicit << :all }
     opts.on('--dry-run')         { options[:dry_run] = true;         explicit << :dry_run }
@@ -1164,7 +1146,6 @@ $quiet        = options[:quiet]
 
 warn_unused_flags(subcommand, explicit) if VALID_OPTIONS.key?(subcommand)
 
-merge_mode = options[:overwrite] ? 'replace' : 'append'
 arg        = ARGV.shift
 
 case subcommand
@@ -1173,8 +1154,8 @@ when 'list', 'ls'
   cmd_list(verbose: options[:verbose], json: options[:json], applied: options[:applied],
            scope: explicit.include?(:scope) ? options[:scope] : nil)
 when 'apply', 'install'
-  abort("Usage: spinpacks apply <pack> [--scope SCOPE] [--overwrite] [--force] [--dry-run]") unless arg
-  cmd_apply(arg, scope: options[:scope], merge_mode: merge_mode, force: options[:force],
+  abort("Usage: spinpacks apply <pack> [--scope SCOPE] [--force] [--dry-run]") unless arg
+  cmd_apply(arg, scope: options[:scope], force: options[:force],
                  dry_run: options[:dry_run], verbose: options[:verbose], json: options[:json])
 when 'remove', 'uninstall'
   abort("Usage: spinpacks remove <pack> [--scope SCOPE] [--force] or --all") unless arg || options[:all]

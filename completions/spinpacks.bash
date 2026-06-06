@@ -15,7 +15,7 @@ _spinpacks() {
   esac
 
   if [[ "$cur" == -* ]]; then
-    COMPREPLY=($(compgen -W "--scope --overwrite --force --all --applied --dry-run -v --verbose -q --quiet --json --no-color -V --version -h --help" -- "$cur"))
+    COMPREPLY=($(compgen -W "--scope --force --all --applied --dry-run -v --verbose -q --quiet --json --no-color -V --version -h --help" -- "$cur"))
   fi
 }
 

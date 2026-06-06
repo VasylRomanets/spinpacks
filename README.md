@@ -84,7 +84,6 @@ Run `spinpacks help <command>` for detailed usage of any command.
 | Option | Description |
 |---|---|
 | `--scope SCOPE` | Target scope: `user` (default), `project`, `local`, `managed` |
-| `--overwrite` | Replace all existing verbs instead of appending |
 | `--force` | Skip safety guards (re-apply or remove untracked packs) |
 | `--all` | Operate on all tracked packs (`remove`/`update`) or show all scopes (`status`) |
 | `--applied` | Filter `list` to only applied packs |
