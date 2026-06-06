@@ -57,4 +57,5 @@ Tracks which packs are applied to which scope and with which merge mode. Located
 5. Add cases to ZSH/BASH/FISH completion heredocs
 6. Add `cmd_*` function
 7. Add `when` case to the entrypoint dispatch
-8. Run `make completions`
+8. Update Makefile if renaming a command used there
+9. Run `make completions`

@@ -11,19 +11,20 @@ _spinpacks() {
   commands=(
     'list:List available packs'
     'ls:List available packs'
-    'apply:Apply a pack to Claude Code settings'
-    'install:Apply a pack to Claude Code settings (alias for apply)'
-    'remove:Remove a pack from Claude Code settings'
-    'update:Re-apply packs'
+    'install:Install a pack into Claude Code settings'
+    'add:Install a pack into Claude Code settings (alias for install)'
+    'uninstall:Remove a pack from Claude Code settings'
+    'remove:Remove a pack from Claude Code settings (alias for uninstall)'
+    'update:Reinstall packs'
     'status:Show status'
     'mode:Get or set spinnerVerbs.mode'
     'sample:Sample random verbs from a pack'
     'info:Show pack details'
+    'show:Show pack details (alias for info)'
     'search:Search packs by name or verb content'
     'doctor:Check for configuration problems'
     'version:Print version'
-    'completions:Generate shell completions'
-    'uninstall:Remove a pack (alias for remove)'
+    'completion:Generate shell completion'
     'help:Show help'
   )
 
@@ -37,7 +38,7 @@ _spinpacks() {
     command) _describe 'command' commands ;;
     args)
       case $words[1] in
-        apply|install)
+        install|add)
           _arguments \
             '--scope[Target scope]:scope:(user project local managed)' \
             '--force[Skip safety guards]' \
@@ -53,14 +54,14 @@ _spinpacks() {
             '--json[Output as JSON]' \
             '1: :_spinpacks_packs'
           ;;
-        info)
+        info|show)
           _arguments \
             '(-v --verbose)'{-v,--verbose}'[List all verbs]' \
             '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]' \
             '1: :_spinpacks_packs'
           ;;
-        remove|uninstall)
+        uninstall|remove)
           _arguments \
             '--all[Operate on all tracked packs]' \
             '--force[Skip safety guards]' \
@@ -83,8 +84,8 @@ _spinpacks() {
           ;;
         list|ls)
           _arguments \
-            '--applied[Show only applied packs]' \
-            '--scope[Filter --applied to a specific scope]:scope:(user project local managed)' \
+            '--installed[Show only installed packs]' \
+            '--scope[Filter --installed to a specific scope]:scope:(user project local managed)' \
             '(-v --verbose)'{-v,--verbose}'[Show verb count per pack]' \
             '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]'
@@ -112,7 +113,7 @@ _spinpacks() {
             '--json[Output as JSON]' \
             '1: :(replace append)'
           ;;
-        completions) _arguments '1: :(bash zsh fish)' ;;
+        completion) _arguments '1: :(bash zsh fish)' ;;
       esac ;;
   esac
 }

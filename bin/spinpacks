@@ -20,44 +20,46 @@ SCOPES = {
   'managed' => '/Library/Application Support/ClaudeCode/managed-settings.json'
 }.freeze
 
-ALL_COMMANDS = %w[list ls apply install remove uninstall update status mode sample info search doctor version completions help].freeze
+ALL_COMMANDS = %w[list ls install add uninstall remove update status mode sample info show search doctor version completion help].freeze
 
 COMMAND_DESCRIPTIONS = {
-  'list'        => 'List available packs',
-  'ls'          => 'List available packs (alias for list)',
-  'apply'       => 'Apply a pack to Claude Code settings',
-  'install'     => 'Apply a pack to Claude Code settings (alias for apply)',
-  'remove'      => 'Remove a pack from Claude Code settings',
-  'uninstall'   => 'Remove a pack from Claude Code settings (alias for remove)',
-  'update'      => 'Re-apply packs to pick up new verbs after an upgrade',
-  'status'      => 'Show active verbs, mode, and tracked packs',
-  'mode'        => "Get or set Claude Code's spinnerVerbs.mode",
-  'sample'      => 'Print random verbs from a pack',
-  'info'        => 'Show pack metadata and a sample of verbs',
-  'search'      => 'Search packs by name, description, tags, or verb content',
-  'doctor'      => 'Validate settings files, state file, and pack integrity',
-  'version'     => 'Print the current version',
-  'completions' => 'Generate shell completions for bash, zsh, or fish',
-  'help'        => 'Show help, or detailed help for a specific command',
+  'list'       => 'List available packs',
+  'ls'         => 'List available packs (alias for list)',
+  'install'    => 'Install a pack into Claude Code settings',
+  'add'        => 'Install a pack into Claude Code settings (alias for install)',
+  'uninstall'  => 'Remove a pack from Claude Code settings',
+  'remove'     => 'Remove a pack from Claude Code settings (alias for uninstall)',
+  'update'     => 'Reinstall packs to pick up new verbs after an upgrade',
+  'status'     => 'Show active verbs, mode, and tracked packs',
+  'mode'       => "Get or set Claude Code's spinnerVerbs.mode",
+  'sample'     => 'Print random verbs from a pack',
+  'info'       => 'Show pack metadata and a sample of verbs',
+  'show'       => 'Show pack metadata and a sample of verbs (alias for info)',
+  'search'     => 'Search packs by name, description, tags, or verb content',
+  'doctor'     => 'Validate settings files, state file, and pack integrity',
+  'version'    => 'Print the current version',
+  'completion' => 'Generate shell completion for bash, zsh, or fish',
+  'help'       => 'Show help, or detailed help for a specific command',
 }.freeze
 
 VALID_OPTIONS = {
-  'list'        => %i[applied scope verbose quiet json no_color],
-  'ls'          => %i[applied scope verbose quiet json no_color],
-  'apply'       => %i[scope force dry_run verbose quiet json no_color],
-  'install'     => %i[scope force dry_run verbose quiet json no_color],
-  'remove'      => %i[scope force all dry_run verbose quiet json no_color],
-  'uninstall'   => %i[scope force all dry_run verbose quiet json no_color],
-  'update'      => %i[scope all dry_run verbose quiet json no_color],
-  'status'      => %i[scope all verbose quiet json no_color],
-  'mode'        => %i[scope dry_run quiet json no_color],
-  'sample'      => %i[count json no_color],
-  'info'        => %i[verbose quiet json no_color],
-  'search'      => %i[verbose quiet json no_color],
-  'doctor'      => %i[quiet json no_color],
-  'completions' => %i[no_color],
-  'version'     => %i[json],
-  'help'        => %i[json],
+  'list'       => %i[installed scope verbose quiet json no_color],
+  'ls'         => %i[installed scope verbose quiet json no_color],
+  'install'    => %i[scope force dry_run verbose quiet json no_color],
+  'add'        => %i[scope force dry_run verbose quiet json no_color],
+  'uninstall'  => %i[scope force all dry_run verbose quiet json no_color],
+  'remove'     => %i[scope force all dry_run verbose quiet json no_color],
+  'update'     => %i[scope all dry_run verbose quiet json no_color],
+  'status'     => %i[scope all verbose quiet json no_color],
+  'mode'       => %i[scope dry_run quiet json no_color],
+  'sample'     => %i[count json no_color],
+  'info'       => %i[verbose quiet json no_color],
+  'show'       => %i[verbose quiet json no_color],
+  'search'     => %i[verbose quiet json no_color],
+  'doctor'     => %i[quiet json no_color],
+  'completion' => %i[no_color],
+  'version'    => %i[json],
+  'help'       => %i[json],
 }.freeze
 
 # --- Color ---------------------------------------------------------------
@@ -103,19 +105,20 @@ ZSH_COMPLETION = <<~'ZSH'
     commands=(
       'list:List available packs'
       'ls:List available packs'
-      'apply:Apply a pack to Claude Code settings'
-      'install:Apply a pack to Claude Code settings (alias for apply)'
-      'remove:Remove a pack from Claude Code settings'
-      'update:Re-apply packs'
+      'install:Install a pack into Claude Code settings'
+      'add:Install a pack into Claude Code settings (alias for install)'
+      'uninstall:Remove a pack from Claude Code settings'
+      'remove:Remove a pack from Claude Code settings (alias for uninstall)'
+      'update:Reinstall packs'
       'status:Show status'
       'mode:Get or set spinnerVerbs.mode'
       'sample:Sample random verbs from a pack'
       'info:Show pack details'
+      'show:Show pack details (alias for info)'
       'search:Search packs by name or verb content'
       'doctor:Check for configuration problems'
       'version:Print version'
-      'completions:Generate shell completions'
-      'uninstall:Remove a pack (alias for remove)'
+      'completion:Generate shell completion'
       'help:Show help'
     )
 
@@ -129,7 +132,7 @@ ZSH_COMPLETION = <<~'ZSH'
       command) _describe 'command' commands ;;
       args)
         case $words[1] in
-          apply|install)
+          install|add)
             _arguments \
               '--scope[Target scope]:scope:(user project local managed)' \
               '--force[Skip safety guards]' \
@@ -145,14 +148,14 @@ ZSH_COMPLETION = <<~'ZSH'
               '--json[Output as JSON]' \
               '1: :_spinpacks_packs'
             ;;
-          info)
+          info|show)
             _arguments \
               '(-v --verbose)'{-v,--verbose}'[List all verbs]' \
               '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]' \
               '1: :_spinpacks_packs'
             ;;
-          remove|uninstall)
+          uninstall|remove)
             _arguments \
               '--all[Operate on all tracked packs]' \
               '--force[Skip safety guards]' \
@@ -175,8 +178,8 @@ ZSH_COMPLETION = <<~'ZSH'
             ;;
           list|ls)
             _arguments \
-              '--applied[Show only applied packs]' \
-              '--scope[Filter --applied to a specific scope]:scope:(user project local managed)' \
+              '--installed[Show only installed packs]' \
+              '--scope[Filter --installed to a specific scope]:scope:(user project local managed)' \
               '(-v --verbose)'{-v,--verbose}'[Show verb count per pack]' \
               '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]'
@@ -204,7 +207,7 @@ ZSH_COMPLETION = <<~'ZSH'
               '--json[Output as JSON]' \
               '1: :(replace append)'
             ;;
-          completions) _arguments '1: :(bash zsh fish)' ;;
+          completion) _arguments '1: :(bash zsh fish)' ;;
         esac ;;
     esac
   }
@@ -218,19 +221,19 @@ BASH_COMPLETION = <<~'BASH'
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    local commands="list ls apply install remove uninstall update status mode sample info search doctor version completions help"
+    local commands="list ls install add uninstall remove update status mode sample info show search doctor version completion help"
 
     case "$prev" in
       spinpacks) COMPREPLY=($(compgen -W "$commands" -- "$cur")); return ;;
-      apply|install|remove|uninstall|sample|info|update)
+      install|add|uninstall|remove|sample|info|show|update)
         COMPREPLY=($(compgen -W "$(spinpacks list 2>/dev/null)" -- "$cur")); return ;;
-      completions) COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur")); return ;;
+      completion) COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur")); return ;;
       mode)    COMPREPLY=($(compgen -W "replace append" -- "$cur")); return ;;
       --scope)     COMPREPLY=($(compgen -W "user project local managed" -- "$cur")); return ;;
     esac
 
     if [[ "$cur" == -* ]]; then
-      COMPREPLY=($(compgen -W "--scope --force --all --applied --dry-run -v --verbose -q --quiet --json --no-color -n --count -V --version -h --help" -- "$cur"))
+      COMPREPLY=($(compgen -W "--scope --force --all --installed --dry-run -v --verbose -q --quiet --json --no-color -n --count -V --version -h --help" -- "$cur"))
     fi
   }
 
@@ -243,35 +246,36 @@ FISH_COMPLETION = <<~'FISH'
   end
 
   function __spinpacks_no_subcommand
-    not __fish_seen_subcommand_from list ls apply install remove uninstall update status mode sample info search doctor version completions help
+    not __fish_seen_subcommand_from list ls install add uninstall remove update status mode sample info show search doctor version completion help
   end
 
   complete -c spinpacks -f -n __spinpacks_no_subcommand -a list        -d 'List available packs'
   complete -c spinpacks -f -n __spinpacks_no_subcommand -a ls          -d 'List available packs'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a apply       -d 'Apply a pack'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a install     -d 'Apply a pack (alias for apply)'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a remove      -d 'Remove a pack'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a update      -d 'Re-apply packs'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a install     -d 'Install a pack'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a add         -d 'Install a pack (alias for install)'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a uninstall   -d 'Remove a pack'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a remove      -d 'Remove a pack (alias for uninstall)'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a update      -d 'Reinstall packs'
   complete -c spinpacks -f -n __spinpacks_no_subcommand -a status      -d 'Show status'
   complete -c spinpacks -f -n __spinpacks_no_subcommand -a mode        -d 'Get or set mode'
   complete -c spinpacks -f -n __spinpacks_no_subcommand -a sample      -d 'Sample random verbs from a pack'
   complete -c spinpacks -f -n __spinpacks_no_subcommand -a info        -d 'Show pack details'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a show        -d 'Show pack details (alias for info)'
   complete -c spinpacks -f -n __spinpacks_no_subcommand -a search      -d 'Search packs'
   complete -c spinpacks -f -n __spinpacks_no_subcommand -a doctor      -d 'Check for problems'
   complete -c spinpacks -f -n __spinpacks_no_subcommand -a version     -d 'Print version'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a completions -d 'Generate shell completions'
-  complete -c spinpacks -f -n __spinpacks_no_subcommand -a uninstall   -d 'Remove a pack (alias for remove)'
+  complete -c spinpacks -f -n __spinpacks_no_subcommand -a completion  -d 'Generate shell completion'
   complete -c spinpacks -f -n __spinpacks_no_subcommand -a help        -d 'Show help'
 
-  complete -c spinpacks -f -n '__fish_seen_subcommand_from apply remove uninstall sample info update' \
+  complete -c spinpacks -f -n '__fish_seen_subcommand_from install add uninstall remove sample info show update' \
     -a '(__spinpacks_packs)'
-  complete -c spinpacks -f -n '__fish_seen_subcommand_from mode'    -a 'replace append'
-  complete -c spinpacks -f -n '__fish_seen_subcommand_from completions' -a 'bash zsh fish'
+  complete -c spinpacks -f -n '__fish_seen_subcommand_from mode'       -a 'replace append'
+  complete -c spinpacks -f -n '__fish_seen_subcommand_from completion' -a 'bash zsh fish'
 
   complete -c spinpacks -l scope        -d 'Target scope' -r -a 'user project local managed'
   complete -c spinpacks -l force        -d 'Skip safety guards'
   complete -c spinpacks -l all          -d 'Operate on all tracked packs or show all scopes'
-  complete -c spinpacks -l applied      -d 'Show only applied packs (list/ls)'
+  complete -c spinpacks -l installed    -d 'Show only installed packs (list/ls)'
   complete -c spinpacks -l dry-run      -d 'Show what would change without writing'
   complete -c spinpacks -s v -l verbose -d 'Show detailed output'
   complete -c spinpacks -s q -l quiet   -d 'Suppress non-error output'
@@ -288,48 +292,48 @@ COMPLETIONS = { 'zsh' => ZSH_COMPLETION, 'bash' => BASH_COMPLETION, 'fish' => FI
 
 COMMAND_HELP = {
   'list'        => <<~HELP,
-    list, ls [--applied [--scope SCOPE]] [-v] [--json] [-q]
+    list, ls [--installed [--scope SCOPE]] [-v] [--json] [-q]
       List all available packs.
-      Use --applied to show only packs currently applied in any scope.
-      Use --scope with --applied to filter to a specific scope.
+      Use --installed to show only packs currently installed in any scope.
+      Use --scope with --installed to filter to a specific scope.
       Use -v/--verbose to show verb count per pack.
 
       Examples:
         spinpacks list
-        spinpacks list --applied
-        spinpacks list --applied --scope project
+        spinpacks list --installed
+        spinpacks list --installed --scope project
         spinpacks list -v
   HELP
-  'apply'       => <<~HELP,
-    apply <pack> [--scope SCOPE] [--force] [--dry-run] [-v] [-q] [--json]
-      Apply a pack to Claude Code settings.
+  'install'     => <<~HELP,
+    install <pack> [--scope SCOPE] [--force] [--dry-run] [-v] [-q] [--json]
+      Install a pack into Claude Code settings.
       Default scope: user. Verbs are merged with any existing verbs.
-      Use --force to re-apply even if the pack is already tracked.
+      Use --force to reinstall even if the pack is already tracked.
       Use --dry-run to preview changes without writing.
 
       Examples:
-        spinpacks apply the-office
-        spinpacks apply the-office --scope project
-        spinpacks apply the-office --dry-run
-        spinpacks apply the-office --force
+        spinpacks install the-office
+        spinpacks install the-office --scope project
+        spinpacks install the-office --dry-run
+        spinpacks install the-office --force
   HELP
-  'remove'      => <<~HELP,
-    remove [<pack>] [--scope SCOPE] [--all] [--force] [--dry-run] [-v] [-q] [--json]
-      Remove a previously applied pack from Claude Code settings.
+  'uninstall'   => <<~HELP,
+    uninstall [<pack>] [--scope SCOPE] [--all] [--force] [--dry-run] [-v] [-q] [--json]
+      Remove a previously installed pack from Claude Code settings.
       Only removes verbs that belong to the pack.
       Use --all to remove all tracked packs.
       Use --force to remove even if the pack is not tracked.
       Use --dry-run to preview changes without writing.
 
       Examples:
-        spinpacks remove the-office
-        spinpacks remove the-office --dry-run
-        spinpacks remove --all
-        spinpacks remove the-office --force
+        spinpacks uninstall the-office
+        spinpacks uninstall the-office --dry-run
+        spinpacks uninstall --all
+        spinpacks uninstall the-office --force
   HELP
   'update'      => <<~HELP,
     update [<pack>] [--scope SCOPE] [--all] [--dry-run] [-v] [-q] [--json]
-      Re-apply a pack (or all tracked packs) to pick up new verbs after upgrade.
+      Reinstall a pack (or all tracked packs) to pick up new verbs after upgrade.
       Use --all to make the intent explicit when updating all packs.
       Use --dry-run to preview changes without writing.
 
@@ -404,29 +408,33 @@ COMMAND_HELP = {
       Example:
         spinpacks doctor
   HELP
-  'install'     => <<~HELP,
-    install <pack> [--scope SCOPE] [--force] [--dry-run] [-v] [-q] [--json]
-      Alias for apply. See `spinpacks help apply`.
+  'add'         => <<~HELP,
+    add <pack> [--scope SCOPE] [--force] [--dry-run] [-v] [-q] [--json]
+      Alias for install. See `spinpacks help install`.
   HELP
-  'uninstall'   => <<~HELP,
-    uninstall [<pack>] [--scope SCOPE] [--all] [--force] [--dry-run] [-v] [-q] [--json]
-      Alias for remove. See `spinpacks help remove`.
+  'remove'      => <<~HELP,
+    remove [<pack>] [--scope SCOPE] [--all] [--force] [--dry-run] [-v] [-q] [--json]
+      Alias for uninstall. See `spinpacks help uninstall`.
   HELP
-  'completions' => <<~HELP,
-    completions <shell>
+  'show'        => <<~HELP,
+    show <pack> [-v] [-q] [--json]
+      Alias for info. See `spinpacks help info`.
+  HELP
+  'completion'  => <<~HELP,
+    completion <shell>
       Print a shell completion script for bash, zsh, or fish.
       Homebrew users get completions installed automatically.
       For manual installs, pipe the output to the appropriate file.
 
       Setup:
         # zsh  — add to fpath, then compinit
-        spinpacks completions zsh > ~/.zsh/completions/_spinpacks
+        spinpacks completion zsh > ~/.zsh/completions/_spinpacks
 
         # bash — source in ~/.bashrc
-        spinpacks completions bash >> ~/.bashrc
+        spinpacks completion bash >> ~/.bashrc
 
         # fish
-        spinpacks completions fish > ~/.config/fish/completions/spinpacks.fish
+        spinpacks completion fish > ~/.config/fish/completions/spinpacks.fish
   HELP
   'version'     => <<~HELP,
     version
@@ -441,7 +449,7 @@ COMMAND_HELP = {
 
       Examples:
         spinpacks help
-        spinpacks help apply
+        spinpacks help install
   HELP
 }.freeze
 
@@ -449,25 +457,25 @@ HELP_TEXT = <<~HELP
   Usage: spinpacks <command> [pack] [options]
 
   Commands:
-    list, ls                   List available packs (--applied filters to applied; -v shows verb count)
-    apply, install <pack>      Apply a pack to Claude Code settings (merges with existing verbs)
-    remove, uninstall [<pack>] Remove a pack (or --all) from Claude Code settings
-    update [<pack>]            Re-apply pack(s) (all tracked if no pack given)
-    status                     Show active verbs, mode and tracked packs (--all shows every scope)
-    mode [replace|append]      Get or set Claude Code's spinnerVerbs.mode
-    sample <pack> [-n N]       Print N random verbs from a pack (default: 1)
-    info <pack>                Show pack details and a sample of verbs (-v lists all)
-    search <text>              Search packs by name or verb content (-v shows matching verbs)
-    doctor                     Check for configuration problems
-    version                    Print version
-    completions <shell>        Generate shell completions (bash, zsh, fish)
-    help [command]             Show help [for COMMAND]
+    list, ls                    List available packs (--installed filters to installed; -v shows verb count)
+    install, add <pack>         Install a pack into Claude Code settings (merges with existing verbs)
+    uninstall, remove [<pack>]  Remove a pack (or --all) from Claude Code settings
+    update [<pack>]             Reinstall pack(s) (all tracked if no pack given)
+    status                      Show active verbs, mode and tracked packs (--all shows every scope)
+    mode [replace|append]       Get or set Claude Code's spinnerVerbs.mode
+    sample <pack> [-n N]        Print N random verbs from a pack (default: 1)
+    info, show <pack>           Show pack details and a sample of verbs (-v lists all)
+    search <text>               Search packs by name or verb content (-v shows matching verbs)
+    doctor                      Check for configuration problems
+    version                     Print version
+    completion <shell>          Generate shell completion (bash, zsh, fish)
+    help [command]              Show help [for COMMAND]
 
   Options:
     --scope SCOPE Target scope: user (default), project, local, managed
-    --force       Skip safety guards (re-apply or remove untracked packs)
-    --all         Operate on all tracked packs (remove/update) or all scopes (status)
-    --applied     Filter list to only applied packs (--scope filters to one scope)
+    --force       Skip safety guards (reinstall or remove untracked packs)
+    --all         Operate on all tracked packs (uninstall/update) or all scopes (status)
+    --installed   Filter list to only installed packs (--scope filters to one scope)
     --dry-run     Show what would change without writing anything
     -v, --verbose Show detailed output
     -q, --quiet   Suppress non-error output
@@ -633,13 +641,13 @@ end
 
 # --- Commands ------------------------------------------------------------
 
-def cmd_list(verbose:, json:, applied: false, scope: nil)
-  warn "Warning: --scope has no effect without --applied." if scope && !applied
+def cmd_list(verbose:, json:, installed: false, scope: nil)
+  warn "Warning: --scope has no effect without --installed." if scope && !installed
   packs = available_packs
-  if applied
-    scopes_to_check = scope ? [scope] : SCOPES.keys
-    applied_set     = scopes_to_check.flat_map { |s| tracked_packs(s) }.uniq
-    packs           = packs.select { |p| applied_set.include?(p) }
+  if installed
+    scopes_to_check  = scope ? [scope] : SCOPES.keys
+    installed_set    = scopes_to_check.flat_map { |s| tracked_packs(s) }.uniq
+    packs            = packs.select { |p| installed_set.include?(p) }
   end
 
   if json
@@ -661,7 +669,7 @@ def cmd_list(verbose:, json:, applied: false, scope: nil)
   end
 
   if packs.empty?
-    say(applied ? "No packs currently applied." : "No packs available.")
+    say(installed ? "No packs currently installed." : "No packs available.")
     return
   end
 
@@ -681,9 +689,9 @@ def cmd_list(verbose:, json:, applied: false, scope: nil)
   end
 end
 
-def cmd_apply(pack, scope:, force:, dry_run:, verbose:, json:)
+def cmd_install(pack, scope:, force:, dry_run:, verbose:, json:)
   unless force
-    abort("Pack '#{pack}' is already applied to #{scope} scope. Use --force to re-apply.") if tracked_packs(scope).include?(pack)
+    abort("Pack '#{pack}' is already installed in #{scope} scope. Use --force to reinstall.") if tracked_packs(scope).include?(pack)
   end
 
   verbs        = read_pack(pack)
@@ -700,7 +708,7 @@ def cmd_apply(pack, scope:, force:, dry_run:, verbose:, json:)
     if json
       print_json(result)
     else
-      say Color.yellow("Would apply '#{Color.bold(pack)}' to #{scope} scope — #{new_verbs.length} verbs (#{added.length} new)")
+      say Color.yellow("Would install '#{Color.bold(pack)}' in #{scope} scope — #{new_verbs.length} verbs (#{added.length} new)")
       if verbose && !added.empty?
         shown = added.first(10)
         say "Would add #{added.length} verb(s):"
@@ -724,7 +732,7 @@ def cmd_apply(pack, scope:, force:, dry_run:, verbose:, json:)
     return
   end
 
-  say Color.green("Applied '#{Color.bold(pack)}' to #{scope} scope — #{new_verbs.length} verbs active")
+  say Color.green("Installed '#{Color.bold(pack)}' in #{scope} scope — #{new_verbs.length} verbs active")
 
   if verbose && !added.empty?
     shown = added.first(10)
@@ -734,29 +742,29 @@ def cmd_apply(pack, scope:, force:, dry_run:, verbose:, json:)
   end
 end
 
-def cmd_remove(pack, scope:, force:, all:, dry_run:, verbose:, json:)
+def cmd_uninstall(pack, scope:, force:, all:, dry_run:, verbose:, json:)
   if all
     warn "Warning: pack name '#{pack}' ignored because --all was given." if pack
     packs = tracked_packs(scope)
-    abort("No packs tracked for #{scope} scope.") if packs.empty?
+    abort("No packs installed in #{scope} scope.") if packs.empty?
     if json
-      results = packs.map { |p| cmd_remove(p, scope: scope, force: force, all: false, dry_run: dry_run, verbose: false, json: :collect) }
+      results = packs.map { |p| cmd_uninstall(p, scope: scope, force: force, all: false, dry_run: dry_run, verbose: false, json: :collect) }
       print_json(results)
     else
-      packs.each { |p| cmd_remove(p, scope: scope, force: force, all: false, dry_run: dry_run, verbose: verbose, json: false) }
+      packs.each { |p| cmd_uninstall(p, scope: scope, force: force, all: false, dry_run: dry_run, verbose: verbose, json: false) }
     end
     return
   end
 
   unless force
-    abort("Pack '#{pack}' is not applied to #{scope} scope. Use --force to remove anyway.") unless tracked_packs(scope).include?(pack)
+    abort("Pack '#{pack}' is not installed in #{scope} scope. Use --force to remove anyway.") unless tracked_packs(scope).include?(pack)
   end
 
   pack_path = safe_pack_path(pack)
 
-  # Nothing to do: pack not tracked and file not found
+  # Nothing to do: pack not installed and file not found
   if force && !tracked_packs(scope).include?(pack) && !File.exist?(pack_path)
-    abort("Pack '#{pack}' is not tracked in #{scope} scope and no pack file was found — nothing to remove.")
+    abort("Pack '#{pack}' is not installed in #{scope} scope and no pack file was found — nothing to remove.")
   end
 
   if !File.exist?(pack_path)
@@ -828,17 +836,17 @@ def cmd_update(pack, scope:, all:, dry_run:, verbose:, json:)
   end
   tracked = migrate_scope(read_state[scope])
   packs   = pack ? [pack] : tracked.keys
-  abort("No packs tracked for #{scope} scope. Run `spinpacks apply <pack>` first.") if packs.empty?
+  abort("No packs installed in #{scope} scope. Run `spinpacks install <pack>` first.") if packs.empty?
 
   if pack && !tracked.key?(pack)
-    abort("Pack '#{pack}' is not tracked for #{scope} scope. Run `spinpacks apply #{pack}` first.")
+    abort("Pack '#{pack}' is not installed in #{scope} scope. Run `spinpacks install #{pack}` first.")
   end
 
   if json
-    results = packs.map { |p| cmd_apply(p, scope: scope, force: true, dry_run: dry_run, verbose: false, json: :collect) }
+    results = packs.map { |p| cmd_install(p, scope: scope, force: true, dry_run: dry_run, verbose: false, json: :collect) }
     print_json(results)
   else
-    packs.each { |p| cmd_apply(p, scope: scope, force: true, dry_run: dry_run, verbose: verbose, json: false) }
+    packs.each { |p| cmd_install(p, scope: scope, force: true, dry_run: dry_run, verbose: verbose, json: false) }
   end
 end
 
@@ -863,7 +871,7 @@ def cmd_status(scope:, verbose:, json:, all_scopes: false)
       print_json(snapshots.empty? ? {} : snapshots)
     else
       if snapshots.empty?
-        say "No packs applied to any scope."
+        say "No packs installed in any scope."
       else
         snapshots.each_with_index do |snap, i|
           say '' if i > 0
@@ -882,7 +890,7 @@ def cmd_status(scope:, verbose:, json:, all_scopes: false)
   packs        = tracked_packs(scope)
 
   if packs.empty? && verbs.empty? && !json
-    say "No packs applied to #{scope} scope."
+    say "No packs installed in #{scope} scope."
     return
   end
 
@@ -910,7 +918,7 @@ def cmd_mode(mode_value, scope:, dry_run:, json:)
     verbs        = (settings.dig('spinnerVerbs', 'verbs') || [])
 
     if verbs.empty?
-      json ? print_json({ scope: scope, mode: nil }) : say("No packs applied to #{scope} scope.")
+      json ? print_json({ scope: scope, mode: nil }) : say("No packs installed in #{scope} scope.")
       return
     end
 
@@ -1084,7 +1092,7 @@ def cmd_doctor(json:)
   end
 end
 
-def cmd_completions(shell)
+def cmd_completion(shell)
   abort("Usage: spinpacks completions <shell>\nSupported: #{COMPLETIONS.keys.join(', ')}") unless shell
   script = COMPLETIONS[shell]
   abort("Unsupported shell '#{shell}'. Supported: #{COMPLETIONS.keys.join(', ')}") unless script
@@ -1133,7 +1141,7 @@ end
 subcommand = ARGV.shift
 options    = { scope: 'user', force: false, all: false, dry_run: false,
                verbose: false, quiet: false, json: false, no_color: false, count: 1,
-               applied: false }
+               installed: false }
 explicit   = []
 
 begin
@@ -1142,7 +1150,7 @@ begin
     opts.on('--force')           { options[:force] = true;           explicit << :force }
     opts.on('--all')             { options[:all] = true;             explicit << :all }
     opts.on('--dry-run')         { options[:dry_run] = true;         explicit << :dry_run }
-    opts.on('--applied')         { options[:applied] = true;         explicit << :applied }
+    opts.on('--installed')       { options[:installed] = true;       explicit << :installed }
     opts.on('-v', '--verbose')   { options[:verbose] = true;         explicit << :verbose }
     opts.on('-q', '--quiet')     { options[:quiet] = true;           explicit << :quiet }
     opts.on('--json')            { options[:json] = true;            explicit << :json }
@@ -1171,16 +1179,16 @@ arg        = ARGV.shift
 case subcommand
 when 'list', 'ls'
   no_args!(arg, subcommand)
-  cmd_list(verbose: options[:verbose], json: options[:json], applied: options[:applied],
+  cmd_list(verbose: options[:verbose], json: options[:json], installed: options[:installed],
            scope: explicit.include?(:scope) ? options[:scope] : nil)
-when 'apply', 'install'
-  abort("Usage: spinpacks apply <pack> [--scope SCOPE] [--force] [--dry-run]") unless arg
-  cmd_apply(arg, scope: options[:scope], force: options[:force],
-                 dry_run: options[:dry_run], verbose: options[:verbose], json: options[:json])
-when 'remove', 'uninstall'
-  abort("Usage: spinpacks remove <pack> [--scope SCOPE] [--force] or --all") unless arg || options[:all]
-  cmd_remove(arg, scope: options[:scope], force: options[:force], all: options[:all],
-                  dry_run: options[:dry_run], verbose: options[:verbose], json: options[:json])
+when 'install', 'add'
+  abort("Usage: spinpacks install <pack> [--scope SCOPE] [--force] [--dry-run]") unless arg
+  cmd_install(arg, scope: options[:scope], force: options[:force],
+                   dry_run: options[:dry_run], verbose: options[:verbose], json: options[:json])
+when 'uninstall', 'remove'
+  abort("Usage: spinpacks uninstall <pack> [--scope SCOPE] [--force] or --all") unless arg || options[:all]
+  cmd_uninstall(arg, scope: options[:scope], force: options[:force], all: options[:all],
+                     dry_run: options[:dry_run], verbose: options[:verbose], json: options[:json])
 when 'update'
   cmd_update(arg, scope: options[:scope], all: options[:all], dry_run: options[:dry_run],
                   verbose: options[:verbose], json: options[:json])
@@ -1194,7 +1202,7 @@ when 'mode'
 when 'sample'
   abort("Usage: spinpacks sample <pack> [-n COUNT]") unless arg
   cmd_sample(arg, count: options[:count], json: options[:json])
-when 'info'
+when 'info', 'show'
   abort("Usage: spinpacks info <pack>") unless arg
   cmd_info(arg, json: options[:json], verbose: options[:verbose])
 when 'search'
@@ -1203,8 +1211,8 @@ when 'search'
 when 'doctor'
   no_args!(arg, subcommand)
   cmd_doctor(json: options[:json])
-when 'completions'
-  cmd_completions(arg)
+when 'completion'
+  cmd_completion(arg)
 when 'version'
   no_args!(arg, 'version')
   options[:json] ? print_json({ version: VERSION }) : puts(VERSION)

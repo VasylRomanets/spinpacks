@@ -14,8 +14,8 @@
 Apply themed spinner verb packs to [Claude Code](https://claude.ai/code). Replace or extend the default loading messages with custom phrases from themed packs — currently ships with a _The Office_ pack.
 
 ```
-$ spinpacks apply the-office
-Applied 'the-office' to user scope — 230 verbs active
+$ spinpacks install the-office
+Installed 'the-office' in user scope — 230 verbs active
 
 $ spinpacks sample the-office -n 3
 Schruting it
@@ -46,8 +46,8 @@ ln -s "$(pwd)/spinpacks/bin/spinpacks" /usr/local/bin/spinpacks
 # See what packs are available
 spinpacks list
 
-# Apply a pack to your user-wide Claude Code settings
-spinpacks apply the-office
+# Install a pack into your user-wide Claude Code settings
+spinpacks install the-office
 
 # Preview verbs before applying
 spinpacks sample the-office -n 5
@@ -56,24 +56,24 @@ spinpacks sample the-office -n 5
 spinpacks status
 
 # Remove a pack
-spinpacks remove the-office
+spinpacks uninstall the-office
 ```
 
 ## Commands
 
 | Command | Description |
 |---|---|
-| `list [--applied] [-v]` | List available packs; `--applied` filters to applied ones, `-v` shows verb count |
-| `apply, install <pack>` | Apply a pack to Claude Code settings |
-| `remove, uninstall [<pack>]` | Remove a pack; `--all` removes every tracked pack |
-| `update [<pack>]` | Re-apply pack(s) to pick up new verbs after an upgrade |
+| `list [--installed] [-v]` | List available packs; `--installed` filters to installed ones, `-v` shows verb count |
+| `install, add <pack>` | Install a pack into Claude Code settings |
+| `uninstall, remove [<pack>]` | Remove a pack; `--all` removes every tracked pack |
+| `update [<pack>]` | Reinstall pack(s) to pick up new verbs after an upgrade |
 | `status [--all]` | Show active verbs, mode, and tracked packs; `--all` shows every scope |
 | `mode [replace\|append] [--dry-run]` | Get or set `spinnerVerbs.mode` (`replace` shows only your verbs; `append` blends with Claude's built-ins) |
 | `sample <pack> [-n N]` | Print N random verbs from a pack (default: 1) |
-| `info <pack>` | Show pack metadata and a sample of verbs |
+| `info, show <pack>` | Show pack metadata and a sample of verbs |
 | `search <text>` | Search packs by name, description, tags, or verb content |
 | `doctor` | Validate settings files, state file, and pack integrity |
-| `completions <shell>` | Generate shell completions for bash, zsh, or fish |
+| `completion <shell>` | Generate shell completion for bash, zsh, or fish |
 | `version` | Print the current version |
 | `help [command]` | Show help, or detailed help for a specific command |
 
@@ -84,9 +84,9 @@ Run `spinpacks help <command>` for detailed usage of any command.
 | Option | Description |
 |---|---|
 | `--scope SCOPE` | Target scope: `user` (default), `project`, `local`, `managed` |
-| `--force` | Skip safety guards (re-apply or remove untracked packs) |
-| `--all` | Operate on all tracked packs (`remove`/`update`) or show all scopes (`status`) |
-| `--applied` | Filter `list` to only applied packs |
+| `--force` | Skip safety guards (reinstall or remove untracked packs) |
+| `--all` | Operate on all tracked packs (`uninstall`/`update`) or show all scopes (`status`) |
+| `--installed` | Filter `list` to only installed packs |
 | `--dry-run` | Preview changes without writing anything |
 | `-v`, `--verbose` | Show detailed output |
 | `-q`, `--quiet` | Suppress non-error output |
@@ -113,8 +113,8 @@ spinpacks writes to Claude Code's [settings files](https://docs.anthropic.com/en
 | `managed` | `/Library/Application Support/ClaudeCode/managed-settings.json` | Managed/enterprise |
 
 ```sh
-# Apply to the current project only
-spinpacks apply the-office --scope project
+# Install into the current project only
+spinpacks install the-office --scope project
 
 # See all scopes at once
 spinpacks status --all
@@ -128,14 +128,14 @@ For manual installs, generate and install the completion script for your shell:
 
 ```sh
 # zsh — add to fpath, then run compinit
-spinpacks completions zsh > ~/.zsh/completions/_spinpacks
+spinpacks completion zsh > ~/.zsh/completions/_spinpacks
 
 # bash — source in ~/.bashrc
-spinpacks completions bash >> ~/.bashrc
+spinpacks completion bash >> ~/.bashrc
 source ~/.bashrc
 
 # fish
-spinpacks completions fish > ~/.config/fish/completions/spinpacks.fish
+spinpacks completion fish > ~/.config/fish/completions/spinpacks.fish
 ```
 
 ## Pack format
@@ -166,7 +166,7 @@ A pack is a single JSON file in the packs directory. It is a JSON object with a 
 | `author.url` | No | Link to the author's profile or homepage |
 | `tags` | No | Search keywords used by `search`; use spaces not hyphens (e.g. `"the office"`, not `"the-office"`) |
 
-Once the file is in the packs directory, run `spinpacks apply <name>` to activate it.
+Once the file is in the packs directory, run `spinpacks install <name>` to activate it.
 
 ## Contributing
 
