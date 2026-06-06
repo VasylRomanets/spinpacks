@@ -17,7 +17,7 @@ SCOPES = {
   'user'    => File.join(CLAUDE_DIR, 'settings.json'),
   'project' => File.expand_path('.claude/settings.json'),
   'local'   => File.expand_path('.claude/settings.local.json'),
-  'system'  => '/Library/Application Support/ClaudeCode/settings.json'
+  'managed' => '/Library/Application Support/ClaudeCode/managed-settings.json'
 }.freeze
 
 ALL_COMMANDS = %w[list ls apply install remove uninstall update status mode sample info search doctor version completions help].freeze
@@ -142,7 +142,7 @@ ZSH_COMPLETION = <<~'ZSH'
               '--all[Operate on all tracked packs]' \
               '--force[Skip safety guards]' \
               '--dry-run[Show what would change without writing]' \
-              '--scope[Target scope]:scope:(user project local system)' \
+              '--scope[Target scope]:scope:(user project local managed)' \
               '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
               '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]' \
@@ -151,7 +151,7 @@ ZSH_COMPLETION = <<~'ZSH'
           list|ls)
             _arguments \
               '--applied[Show only applied packs]' \
-              '--scope[Filter --applied to a specific scope]:scope:(user project local system)' \
+              '--scope[Filter --applied to a specific scope]:scope:(user project local managed)' \
               '(-v --verbose)'{-v,--verbose}'[Show verb count per pack]' \
               '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]'
@@ -168,7 +168,7 @@ ZSH_COMPLETION = <<~'ZSH'
               '--all[Operate on all tracked packs]' \
               '--force[Skip safety guards]' \
               '--dry-run[Show what would change without writing]' \
-              '--scope[Target scope]:scope:(user project local system)' \
+              '--scope[Target scope]:scope:(user project local managed)' \
               '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
               '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]' \
@@ -177,7 +177,7 @@ ZSH_COMPLETION = <<~'ZSH'
           status)
             _arguments \
               '--all[Show all scopes]' \
-              '--scope[Target scope]:scope:(user project local system)' \
+              '--scope[Target scope]:scope:(user project local managed)' \
               '(-v --verbose)'{-v,--verbose}'[List all active verbs]' \
               '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]'
@@ -185,7 +185,7 @@ ZSH_COMPLETION = <<~'ZSH'
           mode)
             _arguments \
               '--dry-run[Show what would change without writing]' \
-              '--scope[Target scope]:scope:(user project local system)' \
+              '--scope[Target scope]:scope:(user project local managed)' \
               '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]' \
               '1: :(replace append)'
@@ -212,7 +212,7 @@ BASH_COMPLETION = <<~'BASH'
         COMPREPLY=($(compgen -W "$(spinpacks list 2>/dev/null)" -- "$cur")); return ;;
       completions) COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur")); return ;;
       mode)    COMPREPLY=($(compgen -W "replace append" -- "$cur")); return ;;
-      --scope)     COMPREPLY=($(compgen -W "user project local system" -- "$cur")); return ;;
+      --scope)     COMPREPLY=($(compgen -W "user project local managed" -- "$cur")); return ;;
     esac
 
     if [[ "$cur" == -* ]]; then
@@ -254,7 +254,7 @@ FISH_COMPLETION = <<~'FISH'
   complete -c spinpacks -f -n '__fish_seen_subcommand_from mode'    -a 'replace append'
   complete -c spinpacks -f -n '__fish_seen_subcommand_from completions' -a 'bash zsh fish'
 
-  complete -c spinpacks -l scope        -d 'Target scope' -r -a 'user project local system'
+  complete -c spinpacks -l scope        -d 'Target scope' -r -a 'user project local managed'
   complete -c spinpacks -l overwrite    -d 'Replace existing verbs instead of appending'
   complete -c spinpacks -l force        -d 'Skip safety guards'
   complete -c spinpacks -l all          -d 'Operate on all tracked packs or show all scopes'
@@ -453,7 +453,7 @@ HELP_TEXT = <<~HELP
     help [command]             Show help [for COMMAND]
 
   Options:
-    --scope SCOPE Target scope: user (default), project, local, system
+    --scope SCOPE Target scope: user (default), project, local, managed
     --overwrite   Replace existing verbs instead of appending
     --force       Skip safety guards (re-apply or remove untracked packs)
     --all         Operate on all tracked packs (remove/update) or all scopes (status)

@@ -50,7 +50,7 @@ _spinpacks() {
             '--all[Operate on all tracked packs]' \
             '--force[Skip safety guards]' \
             '--dry-run[Show what would change without writing]' \
-            '--scope[Target scope]:scope:(user project local system)' \
+            '--scope[Target scope]:scope:(user project local managed)' \
             '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
             '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]' \
@@ -59,7 +59,7 @@ _spinpacks() {
         list|ls)
           _arguments \
             '--applied[Show only applied packs]' \
-            '--scope[Filter --applied to a specific scope]:scope:(user project local system)' \
+            '--scope[Filter --applied to a specific scope]:scope:(user project local managed)' \
             '(-v --verbose)'{-v,--verbose}'[Show verb count per pack]' \
             '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]'
@@ -76,7 +76,7 @@ _spinpacks() {
             '--all[Operate on all tracked packs]' \
             '--force[Skip safety guards]' \
             '--dry-run[Show what would change without writing]' \
-            '--scope[Target scope]:scope:(user project local system)' \
+            '--scope[Target scope]:scope:(user project local managed)' \
             '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
             '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]' \
@@ -85,7 +85,7 @@ _spinpacks() {
         status)
           _arguments \
             '--all[Show all scopes]' \
-            '--scope[Target scope]:scope:(user project local system)' \
+            '--scope[Target scope]:scope:(user project local managed)' \
             '(-v --verbose)'{-v,--verbose}'[List all active verbs]' \
             '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]'
@@ -93,7 +93,7 @@ _spinpacks() {
         mode)
           _arguments \
             '--dry-run[Show what would change without writing]' \
-            '--scope[Target scope]:scope:(user project local system)' \
+            '--scope[Target scope]:scope:(user project local managed)' \
             '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]' \
             '1: :(replace append)'

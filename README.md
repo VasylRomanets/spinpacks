@@ -83,7 +83,7 @@ Run `spinpacks help <command>` for detailed usage of any command.
 
 | Option | Description |
 |---|---|
-| `--scope SCOPE` | Target scope: `user` (default), `project`, `local`, `system` |
+| `--scope SCOPE` | Target scope: `user` (default), `project`, `local`, `managed` |
 | `--overwrite` | Replace all existing verbs instead of appending |
 | `--force` | Skip safety guards (re-apply or remove untracked packs) |
 | `--all` | Operate on all tracked packs (`remove`/`update`) or show all scopes (`status`) |
@@ -106,7 +106,7 @@ spinpacks writes to Claude Code's [settings files](https://docs.anthropic.com/en
 | `user` (default) | `~/.claude/settings.json` | Applies to all your projects |
 | `project` | `.claude/settings.json` | Applies to the current project (commit to share with team) |
 | `local` | `.claude/settings.local.json` | Per-project, never committed |
-| `system` | `/Library/Application Support/ClaudeCode/settings.json` | System-wide |
+| `managed` | `/Library/Application Support/ClaudeCode/managed-settings.json` | Managed/enterprise |
 
 ```sh
 # Apply to the current project only

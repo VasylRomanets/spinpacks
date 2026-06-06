@@ -11,7 +11,7 @@ _spinpacks() {
       COMPREPLY=($(compgen -W "$(spinpacks list 2>/dev/null)" -- "$cur")); return ;;
     completions) COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur")); return ;;
     mode)    COMPREPLY=($(compgen -W "replace append" -- "$cur")); return ;;
-    --scope)     COMPREPLY=($(compgen -W "user project local system" -- "$cur")); return ;;
+    --scope)     COMPREPLY=($(compgen -W "user project local managed" -- "$cur")); return ;;
   esac
 
   if [[ "$cur" == -* ]]; then

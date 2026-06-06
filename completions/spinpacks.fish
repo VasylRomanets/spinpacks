@@ -28,7 +28,7 @@ complete -c spinpacks -f -n '__fish_seen_subcommand_from apply remove uninstall 
 complete -c spinpacks -f -n '__fish_seen_subcommand_from mode'    -a 'replace append'
 complete -c spinpacks -f -n '__fish_seen_subcommand_from completions' -a 'bash zsh fish'
 
-complete -c spinpacks -l scope        -d 'Target scope' -r -a 'user project local system'
+complete -c spinpacks -l scope        -d 'Target scope' -r -a 'user project local managed'
 complete -c spinpacks -l overwrite    -d 'Replace existing verbs instead of appending'
 complete -c spinpacks -l force        -d 'Skip safety guards'
 complete -c spinpacks -l all          -d 'Operate on all tracked packs or show all scopes'
