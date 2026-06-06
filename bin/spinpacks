@@ -856,7 +856,7 @@ def cmd_status(scope:, verbose:, json:, all_scopes: false)
   settings     = read_settings(scope)
   raw          = settings.dig('spinnerVerbs', 'verbs')
   verbs        = raw.is_a?(Array) ? raw : []
-  spinner_mode = settings.dig('spinnerVerbs', 'mode') || (verbs.empty? ? 'n/a' : 'not set')
+  spinner_mode = verbs.empty? ? 'n/a' : (settings.dig('spinnerVerbs', 'mode') || 'not set')
   packs        = tracked_packs(scope)
 
   if packs.empty? && verbs.empty? && !json
