@@ -94,7 +94,12 @@ Run `spinpacks help <command>` for detailed usage of any command.
 | `--no-color` | Disable color output |
 | `-n COUNT` | Number of verbs to preview |
 
-Set `NO_COLOR` in your environment to disable color output globally.
+## Environment
+
+| Variable | Description |
+|---|---|
+| `NO_COLOR` | Disable color output globally when set (any value) |
+| `CLAUDE_CONFIG_DIR` | Override Claude Code's config directory (default: `~/.claude`) |
 
 ## Scopes
 
