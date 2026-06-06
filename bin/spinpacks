@@ -1085,7 +1085,7 @@ def cmd_doctor(json:)
 end
 
 def cmd_completion(shell)
-  abort("Usage: spinpacks completions <shell>\nSupported: #{COMPLETIONS.keys.join(', ')}") unless shell
+  abort("Usage: spinpacks completion <shell>\nSupported: #{COMPLETIONS.keys.join(', ')}") unless shell
   script = COMPLETIONS[shell]
   abort("Unsupported shell '#{shell}'. Supported: #{COMPLETIONS.keys.join(', ')}") unless script
 
