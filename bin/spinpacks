@@ -45,8 +45,8 @@ COMMAND_DESCRIPTIONS = {
 VALID_OPTIONS = {
   'list'       => %i[installed scope verbose quiet json no_color],
   'ls'         => %i[installed scope verbose quiet json no_color],
-  'install'    => %i[scope force dry_run verbose quiet json no_color],
-  'add'        => %i[scope force dry_run verbose quiet json no_color],
+  'install'    => %i[scope dry_run verbose quiet json no_color],
+  'add'        => %i[scope dry_run verbose quiet json no_color],
   'uninstall'  => %i[scope force all dry_run verbose quiet json no_color],
   'remove'     => %i[scope force all dry_run verbose quiet json no_color],
   'update'     => %i[scope all dry_run verbose quiet json no_color],
@@ -135,7 +135,6 @@ ZSH_COMPLETION = <<~'ZSH'
           install|add)
             _arguments \
               '--scope[Target scope]:scope:(user project local managed)' \
-              '--force[Skip safety guards]' \
               '--dry-run[Show what would change without writing]' \
               '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
               '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
@@ -305,17 +304,16 @@ COMMAND_HELP = {
         spinpacks list -v
   HELP
   'install'     => <<~HELP,
-    install <pack> [--scope SCOPE] [--force] [--dry-run] [-v] [-q] [--json]
+    install <pack> [--scope SCOPE] [--dry-run] [-v] [-q] [--json]
       Install a pack into Claude Code settings.
       Default scope: user. Verbs are merged with any existing verbs.
-      Use --force to reinstall even if the pack is already tracked.
       Use --dry-run to preview changes without writing.
+      To reinstall an already-installed pack, use `spinpacks update <pack>`.
 
       Examples:
         spinpacks install the-office
         spinpacks install the-office --scope project
         spinpacks install the-office --dry-run
-        spinpacks install the-office --force
   HELP
   'uninstall'   => <<~HELP,
     uninstall [<pack>] [--scope SCOPE] [--all] [--force] [--dry-run] [-v] [-q] [--json]
@@ -409,7 +407,7 @@ COMMAND_HELP = {
         spinpacks doctor
   HELP
   'add'         => <<~HELP,
-    add <pack> [--scope SCOPE] [--force] [--dry-run] [-v] [-q] [--json]
+    add <pack> [--scope SCOPE] [--dry-run] [-v] [-q] [--json]
       Alias for install. See `spinpacks help install`.
   HELP
   'remove'      => <<~HELP,
@@ -473,7 +471,7 @@ HELP_TEXT = <<~HELP
 
   Options:
     --scope SCOPE      Target scope: user (default), project, local, managed
-    --force            Skip safety guards (reinstall or remove untracked packs)
+    --force            Skip safety guards (remove untracked packs)
     --all              Operate on all tracked packs (uninstall/update) or all scopes (status)
     --installed        Filter list to only installed packs (--scope filters to one scope)
     --dry-run          Show what would change without writing anything
@@ -691,11 +689,7 @@ def cmd_list(verbose:, json:, installed: false, scope: nil)
   end
 end
 
-def cmd_install(pack, scope:, force:, dry_run:, verbose:, json:)
-  unless force
-    abort("Pack '#{pack}' is already installed in #{scope} scope. Use --force to reinstall.") if tracked_packs(scope).include?(pack)
-  end
-
+def cmd_install(pack, scope:, dry_run:, verbose:, json:)
   verbs        = read_pack(pack)
   settings     = read_settings(scope)
   raw          = settings.dig('spinnerVerbs', 'verbs')
@@ -845,10 +839,10 @@ def cmd_update(pack, scope:, all:, dry_run:, verbose:, json:)
   end
 
   if json
-    results = packs.map { |p| cmd_install(p, scope: scope, force: true, dry_run: dry_run, verbose: false, json: :collect) }
+    results = packs.map { |p| cmd_install(p, scope: scope, dry_run: dry_run, verbose: false, json: :collect) }
     print_json(results)
   else
-    packs.each { |p| cmd_install(p, scope: scope, force: true, dry_run: dry_run, verbose: verbose, json: false) }
+    packs.each { |p| cmd_install(p, scope: scope, dry_run: dry_run, verbose: verbose, json: false) }
   end
 end
 
@@ -1184,9 +1178,9 @@ when 'list', 'ls'
   cmd_list(verbose: options[:verbose], json: options[:json], installed: options[:installed],
            scope: explicit.include?(:scope) ? options[:scope] : nil)
 when 'install', 'add'
-  abort("Usage: spinpacks install <pack> [--scope SCOPE] [--force] [--dry-run]") unless arg
-  cmd_install(arg, scope: options[:scope], force: options[:force],
-                   dry_run: options[:dry_run], verbose: options[:verbose], json: options[:json])
+  abort("Usage: spinpacks install <pack> [--scope SCOPE] [--dry-run]") unless arg
+  abort("Pack '#{arg}' is already installed in #{options[:scope]} scope. Use `spinpacks update #{arg}` to reinstall.") if tracked_packs(options[:scope]).include?(arg)
+  cmd_install(arg, scope: options[:scope], dry_run: options[:dry_run], verbose: options[:verbose], json: options[:json])
 when 'uninstall', 'remove'
   abort("Usage: spinpacks uninstall <pack> [--scope SCOPE] [--force] or --all") unless arg || options[:all]
   cmd_uninstall(arg, scope: options[:scope], force: options[:force], all: options[:all],

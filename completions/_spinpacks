@@ -41,7 +41,6 @@ _spinpacks() {
         install|add)
           _arguments \
             '--scope[Target scope]:scope:(user project local managed)' \
-            '--force[Skip safety guards]' \
             '--dry-run[Show what would change without writing]' \
             '(-v --verbose)'{-v,--verbose}'[Show detailed output]' \
             '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
