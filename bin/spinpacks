@@ -22,6 +22,25 @@ SCOPES = {
 
 ALL_COMMANDS = %w[list ls apply install remove uninstall update status mode sample info search doctor version completions help].freeze
 
+COMMAND_DESCRIPTIONS = {
+  'list'        => 'List available packs',
+  'ls'          => 'List available packs (alias for list)',
+  'apply'       => 'Apply a pack to Claude Code settings',
+  'install'     => 'Apply a pack to Claude Code settings (alias for apply)',
+  'remove'      => 'Remove a pack from Claude Code settings',
+  'uninstall'   => 'Remove a pack from Claude Code settings (alias for remove)',
+  'update'      => 'Re-apply packs to pick up new verbs after an upgrade',
+  'status'      => 'Show active verbs, mode, and tracked packs',
+  'mode'        => "Get or set Claude Code's spinnerVerbs.mode",
+  'sample'      => 'Print random verbs from a pack',
+  'info'        => 'Show pack metadata and a sample of verbs',
+  'search'      => 'Search packs by name, description, tags, or verb content',
+  'doctor'      => 'Validate settings files, state file, and pack integrity',
+  'version'     => 'Print the current version',
+  'completions' => 'Generate shell completions for bash, zsh, or fish',
+  'help'        => 'Show help, or detailed help for a specific command',
+}.freeze
+
 VALID_OPTIONS = {
   'list'        => %i[applied scope verbose quiet json no_color],
   'ls'          => %i[applied scope verbose quiet json no_color],
@@ -38,7 +57,7 @@ VALID_OPTIONS = {
   'doctor'      => %i[quiet json no_color],
   'completions' => [],
   'version'     => %i[json],
-  'help'        => [],
+  'help'        => %i[json],
 }.freeze
 
 # --- Color ---------------------------------------------------------------
@@ -1054,7 +1073,22 @@ def cmd_completions(shell)
   print script
 end
 
-def cmd_help(command)
+def cmd_help(command, json:)
+  if json
+    if command
+      help = COMMAND_HELP[command]
+      if help
+        print_json({ command: command, description: COMMAND_DESCRIPTIONS[command], help: help.strip })
+      else
+        warn "Error: Unknown command '#{command}'."
+        exit 1
+      end
+    else
+      print_json({ commands: COMMAND_DESCRIPTIONS })
+    end
+    return
+  end
+
   unless command
     print HELP_TEXT
     return
@@ -1159,7 +1193,7 @@ when 'version'
 when nil
   cmd_help(nil)
 when 'help'
-  cmd_help(arg)
+  cmd_help(arg, json: options[:json])
 else
   warn "Error: Unknown command '#{subcommand}'."
   warn "Run `spinpacks help` for usage."
