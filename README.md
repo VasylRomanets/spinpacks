@@ -2,12 +2,12 @@
   <h1>Spinpacks</h1>
   <p><b>Because waiting for LLM generation should never be boring.</b></p>
 
-  [![Homebrew Formula](https://img.shields.io/badge/homebrew-formula-blue.svg)](https://github.com/VasylRomanets/spinpacks)
+  [![Homebrew Formula](https://img.shields.io/badge/homebrew-formula-blue.svg)](https://github.com/VasylRomanets/homebrew-spinpacks)
   [![Claude Code](https://img.shields.io/badge/Made_for-Claude_Code-D97757.svg)](https://claude.ai/code)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
   <br />
-  <img src=".github/assets/spinnerverb.gif" width="60%" alt="spinpacks demo" style="border-radius: 8px;">
+  <img src=".github/assets/spinnerverb.gif" width="60%" alt="spinpacks demo">
 </div>
 
 <br />
