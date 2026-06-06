@@ -861,7 +861,7 @@ def cmd_status(scope:, verbose:, json:, all_scopes: false)
       print_json(snapshots.empty? ? {} : snapshots)
     else
       if snapshots.empty?
-        say "No packs applied in any scope."
+        say "No packs applied to any scope."
       else
         snapshots.each_with_index do |snap, i|
           say '' if i > 0
@@ -879,6 +879,11 @@ def cmd_status(scope:, verbose:, json:, all_scopes: false)
   spinner_mode = settings.dig('spinnerVerbs', 'mode') || (verbs.empty? ? 'n/a' : 'not set')
   packs        = tracked_packs(scope)
 
+  if packs.empty? && verbs.empty? && !json
+    say "No packs applied to #{scope} scope."
+    return
+  end
+
   if json
     data = { scope: scope, path: path, packs: packs, verb_count: verbs.length, mode: spinner_mode }
     data[:verbs] = verbs if verbose
@@ -889,7 +894,7 @@ def cmd_status(scope:, verbose:, json:, all_scopes: false)
   say "#{Color.cyan('Scope')} : #{scope} (#{path})"
   say "#{Color.cyan('Packs')} : #{packs.empty? ? Color.dim('none') : packs.map { |p| Color.bold(p) }.join(', ')}"
   say "#{Color.cyan('Verbs')} : #{verbs.empty? ? Color.dim('none') : "#{verbs.length} active"}"
-  say "#{Color.cyan('Mode')}  : #{verbs.empty? ? Color.dim(spinner_mode) : spinner_mode}"
+  say "#{Color.cyan('Mode')}  : #{verbs.empty? ? Color.dim('n/a') : spinner_mode}"
 
   if verbose && !verbs.empty?
     say "Active verbs:"
