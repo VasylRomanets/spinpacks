@@ -854,12 +854,19 @@ end
 
 def cmd_status(scope:, verbose:, json:, all_scopes: false)
   if all_scopes
+    snapshots = SCOPES.keys
+      .map    { |s| status_snapshot(s, verbose: verbose) }
+      .reject { |s| s[:packs].empty? && s[:verb_count].zero? }
     if json
-      print_json(SCOPES.keys.map { |s| status_snapshot(s, verbose: verbose) })
+      print_json(snapshots.empty? ? {} : snapshots)
     else
-      SCOPES.keys.each_with_index do |s, i|
-        say '' if i > 0
-        cmd_status(scope: s, verbose: verbose, json: false)
+      if snapshots.empty?
+        say "No packs applied in any scope."
+      else
+        snapshots.each_with_index do |snap, i|
+          say '' if i > 0
+          cmd_status(scope: snap[:scope], verbose: verbose, json: false)
+        end
       end
     end
     return
