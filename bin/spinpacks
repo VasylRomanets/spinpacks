@@ -906,8 +906,13 @@ def cmd_mode(mode_value, scope:, dry_run:, json:)
   unless mode_value
     settings     = read_settings(scope)
     verbs        = (settings.dig('spinnerVerbs', 'verbs') || [])
-    spinner_mode = settings.dig('spinnerVerbs', 'mode') || (verbs.empty? ? 'n/a' : 'not set')
 
+    if verbs.empty?
+      json ? print_json({ scope: scope, mode: nil }) : say("No packs applied to #{scope} scope.")
+      return
+    end
+
+    spinner_mode = settings.dig('spinnerVerbs', 'mode') || 'not set'
     if json
       print_json({ scope: scope, mode: spinner_mode })
     else
