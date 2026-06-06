@@ -658,7 +658,9 @@ def cmd_list(verbose:, json:, installed: false, scope: nil)
           { name: p, error: error }
         else
           verbs = raw.is_a?(Hash) ? Array(raw['verbs']) : []
-          { name: p, verb_count: verbs.length }
+          entry = { name: p, verb_count: verbs.length }
+          entry[:description] = raw['description'] if raw.is_a?(Hash) && raw['description']
+          entry
         end
       end
       print_json(data)
