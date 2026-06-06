@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0] - 2026-06-06
+
+### Fixed
+- `--scope` (and any flag requiring an argument) without a value now prints a clean error instead of a Ruby exception
+- `completion` error message incorrectly said `completions` (stale plural form)
+- `info`/`show` label alignment was inconsistent (`Author`/`URL` misaligned relative to other fields)
+- `help` top-level search description was missing `description` and `tags` (said "by name or verb content")
+- `status --all --json` returned `{}` instead of `[]` when no packs are installed in any scope
+
+### Changed
+- `--force` removed from `install`/`add` — use `spinpacks update <pack>` to reinstall an already-installed pack; `--force` is still supported on `uninstall`/`remove` for removing untracked packs
+- `-q`/`--quiet` removed from read-only commands (`list`, `status`, `info`/`show`, `search`) — it remains on write commands (`install`, `uninstall`, `update`, `mode`, `doctor`)
+
 ## [1.2.0] - 2026-06-06
 
 ### Added
