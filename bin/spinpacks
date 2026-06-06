@@ -1151,7 +1151,7 @@ begin
     opts.on('-V', '--version')              { puts VERSION; exit }
     opts.on('-h', '--help')                 { print HELP_TEXT; exit }
   end.parse!(ARGV)
-rescue OptionParser::InvalidOption, OptionParser::AmbiguousOption => e
+rescue OptionParser::InvalidOption, OptionParser::AmbiguousOption, OptionParser::MissingArgument => e
   warn "Error: #{e.message}"
   warn "Run `spinpacks help` for usage."
   exit 1
