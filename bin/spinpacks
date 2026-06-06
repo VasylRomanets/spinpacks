@@ -37,7 +37,7 @@ VALID_OPTIONS = {
   'search'      => %i[verbose quiet json no_color],
   'doctor'      => %i[quiet json no_color],
   'completions' => [],
-  'version'     => [],
+  'version'     => %i[json],
   'help'        => [],
 }.freeze
 
@@ -1155,7 +1155,7 @@ when 'completions'
   cmd_completions(arg)
 when 'version'
   no_args!(arg, 'version')
-  puts VERSION
+  options[:json] ? print_json({ version: VERSION }) : puts(VERSION)
 when nil
   cmd_help(nil)
 when 'help'
