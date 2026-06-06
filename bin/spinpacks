@@ -974,8 +974,8 @@ def cmd_info(pack, json:, verbose: false)
   say "#{Color.cyan('Pack')}     : #{Color.bold(pack)}"
   say "#{Color.cyan('Desc')}     : #{meta['description']}"     if meta['description']
   if meta['author'].is_a?(Hash)
-    say "#{Color.cyan('Author')} : #{meta['author']['name']}"  if meta['author']['name']
-    say "#{Color.cyan('URL')}    : #{meta['author']['url']}"   if meta['author']['url']
+    say "#{Color.cyan('Author')}   : #{meta['author']['name']}"  if meta['author']['name']
+    say "#{Color.cyan('URL')}      : #{meta['author']['url']}"   if meta['author']['url']
   end
   say "#{Color.cyan('Tags')}     : #{meta['tags'].join(', ')}" if meta['tags']&.any?
   say "#{Color.cyan('Verbs')}    : #{verbs.length}"
