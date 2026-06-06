@@ -6,7 +6,6 @@
   [![Claude Code](https://img.shields.io/badge/Made_for-Claude_Code-D97757.svg)](https://claude.ai/code)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-  <br />
   <img src=".github/assets/spinnerverb.gif" width="60%" alt="spinpacks demo">
 </div>
 
