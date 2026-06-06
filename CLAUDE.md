@@ -21,7 +21,7 @@ There is no build step. No gems or external dependencies — standard library on
 
 The entire CLI lives in a single file: `bin/spinpacks`. It is structured top-to-bottom:
 
-1. **Constants** — `CLAUDE_DIR` (respects `$CLAUDE_CONFIG_DIR`, falls back to `~/.claude`), `SCOPES`, `PACKS_DIR`, `STATE_FILE`, `MAX_FILE_SIZE`, `PACK_NAME_PATTERN`, `ALL_COMMANDS`, `COMMAND_DESCRIPTIONS`, `VALID_OPTIONS`; `META_FIELDS` is defined later, just before the file helpers that use it
+1. **Constants** — `CLAUDE_DIR` (respects `$CLAUDE_CONFIG_DIR`, falls back to `~/.claude`), `SCOPES`, `PACKS_DIR`, `STATE_FILE`, `MAX_FILE_SIZE`, `PACK_NAME_PATTERN`, `COMMAND_DESCRIPTIONS`, `VALID_OPTIONS`; `META_FIELDS` is defined later, just before the file helpers that use it
 2. **Color module** — TTY/stream-aware; `Color.red_err` checks `$stderr.tty?`, everything else checks `$stdout.tty?`
 3. **Inline completion scripts** — ZSH/BASH/FISH heredocs; mirrored as static files in `completions/` via `make completions`
 4. **Help text** — `COMMAND_HELP` (per-command) and `HELP_TEXT` (top-level)
@@ -47,8 +47,7 @@ Tracks which packs are installed to which scope and with which merge mode. Locat
 
 ## Adding a new command
 
-1. Add to `ALL_COMMANDS`
-2. Add to `VALID_OPTIONS`
+1. Add to `VALID_OPTIONS`
 3. Add to `COMMAND_HELP`
 4. Add to `HELP_TEXT`
 5. Add cases to ZSH/BASH/FISH completion heredocs
