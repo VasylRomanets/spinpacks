@@ -13,7 +13,6 @@ ruby bin/spinpacks <command>
 
 # Regenerate static completion files (required after changing commands or options)
 make completions
-
 ```
 
 There is no build step. No gems or external dependencies — standard library only (`json`, `optparse`, `fileutils`).
