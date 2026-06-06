@@ -56,7 +56,6 @@ _spinpacks() {
         info|show)
           _arguments \
             '(-v --verbose)'{-v,--verbose}'[List all verbs]' \
-            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]' \
             '1: :_spinpacks_packs'
           ;;
@@ -86,13 +85,11 @@ _spinpacks() {
             '--installed[Show only installed packs]' \
             '--scope[Filter --installed to a specific scope]:scope:(user project local managed)' \
             '(-v --verbose)'{-v,--verbose}'[Show verb count per pack]' \
-            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]'
           ;;
         search)
           _arguments \
             '(-v --verbose)'{-v,--verbose}'[Show matching verbs]' \
-            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]' \
             '1: :'
           ;;
@@ -101,7 +98,6 @@ _spinpacks() {
             '--all[Show all scopes]' \
             '--scope[Target scope]:scope:(user project local managed)' \
             '(-v --verbose)'{-v,--verbose}'[List all active verbs]' \
-            '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
             '--json[Output as JSON]'
           ;;
         mode)

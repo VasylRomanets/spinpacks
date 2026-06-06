@@ -43,19 +43,19 @@ COMMAND_DESCRIPTIONS = {
 }.freeze
 
 VALID_OPTIONS = {
-  'list'       => %i[installed scope verbose quiet json no_color],
-  'ls'         => %i[installed scope verbose quiet json no_color],
+  'list'       => %i[installed scope verbose json no_color],
+  'ls'         => %i[installed scope verbose json no_color],
   'install'    => %i[scope dry_run verbose quiet json no_color],
   'add'        => %i[scope dry_run verbose quiet json no_color],
   'uninstall'  => %i[scope force all dry_run verbose quiet json no_color],
   'remove'     => %i[scope force all dry_run verbose quiet json no_color],
   'update'     => %i[scope all dry_run verbose quiet json no_color],
-  'status'     => %i[scope all verbose quiet json no_color],
+  'status'     => %i[scope all verbose json no_color],
   'mode'       => %i[scope dry_run quiet json no_color],
   'sample'     => %i[count json no_color],
-  'info'       => %i[verbose quiet json no_color],
-  'show'       => %i[verbose quiet json no_color],
-  'search'     => %i[verbose quiet json no_color],
+  'info'       => %i[verbose json no_color],
+  'show'       => %i[verbose json no_color],
+  'search'     => %i[verbose json no_color],
   'doctor'     => %i[quiet json no_color],
   'completion' => %i[no_color],
   'version'    => %i[json],
@@ -150,7 +150,6 @@ ZSH_COMPLETION = <<~'ZSH'
           info|show)
             _arguments \
               '(-v --verbose)'{-v,--verbose}'[List all verbs]' \
-              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]' \
               '1: :_spinpacks_packs'
             ;;
@@ -180,13 +179,11 @@ ZSH_COMPLETION = <<~'ZSH'
               '--installed[Show only installed packs]' \
               '--scope[Filter --installed to a specific scope]:scope:(user project local managed)' \
               '(-v --verbose)'{-v,--verbose}'[Show verb count per pack]' \
-              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]'
             ;;
           search)
             _arguments \
               '(-v --verbose)'{-v,--verbose}'[Show matching verbs]' \
-              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]' \
               '1: :'
             ;;
@@ -195,7 +192,6 @@ ZSH_COMPLETION = <<~'ZSH'
               '--all[Show all scopes]' \
               '--scope[Target scope]:scope:(user project local managed)' \
               '(-v --verbose)'{-v,--verbose}'[List all active verbs]' \
-              '(-q --quiet)'{-q,--quiet}'[Suppress non-error output]' \
               '--json[Output as JSON]'
             ;;
           mode)
@@ -291,7 +287,7 @@ COMPLETIONS = { 'zsh' => ZSH_COMPLETION, 'bash' => BASH_COMPLETION, 'fish' => FI
 
 COMMAND_HELP = {
   'list'        => <<~HELP,
-    list, ls [--installed [--scope SCOPE]] [-v] [--json] [-q]
+    list, ls [--installed [--scope SCOPE]] [-v] [--json]
       List all available packs.
       Use --installed to show only packs currently installed in any scope.
       Use --scope with --installed to filter to a specific scope.
@@ -342,7 +338,7 @@ COMMAND_HELP = {
         spinpacks update the-office --dry-run
   HELP
   'status'      => <<~HELP,
-    status [--scope SCOPE] [--all] [-v] [-q] [--json]
+    status [--scope SCOPE] [--all] [-v] [--json]
       Show active verb count, mode and tracked packs for a scope.
       Use --all to show every scope at once.
       Use -v/--verbose to list all active verbs.
@@ -378,7 +374,7 @@ COMMAND_HELP = {
         spinpacks sample the-office --json
   HELP
   'info'        => <<~HELP,
-    info <pack> [-v] [-q] [--json]
+    info <pack> [-v] [--json]
       Show details about a pack: metadata and a random sample of verbs.
       Use -v/--verbose to list all verbs instead of the sample.
 
@@ -388,7 +384,7 @@ COMMAND_HELP = {
         spinpacks info the-office --json
   HELP
   'search'      => <<~HELP,
-    search <text> [-v] [-q] [--json]
+    search <text> [-v] [--json]
       Search available packs by name, description, tags, or verb content.
       Use -v/--verbose to show which verbs matched.
 
@@ -415,7 +411,7 @@ COMMAND_HELP = {
       Alias for uninstall. See `spinpacks help uninstall`.
   HELP
   'show'        => <<~HELP,
-    show <pack> [-v] [-q] [--json]
+    show <pack> [-v] [--json]
       Alias for info. See `spinpacks help info`.
   HELP
   'completion'  => <<~HELP,

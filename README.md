@@ -89,7 +89,7 @@ Run `spinpacks help <command>` for detailed usage of any command.
 | `--installed` | Filter `list` to only installed packs |
 | `--dry-run` | Preview changes without writing anything |
 | `-v`, `--verbose` | Show detailed output |
-| `-q`, `--quiet` | Suppress non-error output |
+| `-q`, `--quiet` | Suppress non-error output (write commands only) |
 | `--json` | Output as JSON (useful for scripting) |
 | `--no-color` | Disable color output |
 | `-n, --count COUNT` | Number of verbs to sample |
