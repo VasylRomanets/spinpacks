@@ -582,7 +582,6 @@ end
 
 META_FIELDS = %w[description author tags].freeze
 
-
 def read_state
   read_json(STATE_FILE) || {}
 end
@@ -614,7 +613,6 @@ end
 def tracked_packs(scope)
   migrate_scope(read_state[scope]).keys
 end
-
 
 # --- Commands ------------------------------------------------------------
 
