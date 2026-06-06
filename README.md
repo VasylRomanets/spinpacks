@@ -1,10 +1,16 @@
-# spinpacks
+<div align="center">
+  <h1>Spinpacks</h1>
+  <p><b>Because waiting for LLM generation should never be boring.</b></p>
 
-> Because waiting for LLM generation should never be boring.
+  [![Homebrew Formula](https://img.shields.io/badge/homebrew-formula-blue.svg)](https://github.com/VasylRomanets/spinpacks)
+  [![Claude Code](https://img.shields.io/badge/Made_for-Claude_Code-D97757.svg)](https://claude.ai/code)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-<p align="left">
-  <img src=".github/assets/spinnerverb.gif" width="50%" alt="Spinner Verb">
-</p>
+  <br />
+  <img src=".github/assets/spinnerverb.gif" width="60%" alt="spinpacks demo" style="border-radius: 8px;">
+</div>
+
+<br />
 
 Apply themed spinner verb packs to [Claude Code](https://claude.ai/code). Replace or extend the default loading messages with custom phrases from themed packs — currently ships with a _The Office_ pack.
 
