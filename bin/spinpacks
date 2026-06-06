@@ -459,7 +459,7 @@ HELP_TEXT = <<~HELP
     mode [replace|append]       Get or set Claude Code's spinnerVerbs.mode
     sample <pack> [-n N]        Print N random verbs from a pack (default: 1)
     info, show <pack>           Show pack details and a sample of verbs (-v lists all)
-    search <text>               Search packs by name or verb content (-v shows matching verbs)
+    search <text>               Search packs by name, description, tags, or verb content (-v shows matching verbs)
     doctor                      Check for configuration problems
     version                     Print version
     completion <shell>          Generate shell completion (bash, zsh, fish)
