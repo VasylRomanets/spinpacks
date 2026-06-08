@@ -60,6 +60,7 @@ spinpacks uninstall the-office
 ```
 
 ## Usage
+
 ```
 $ spinpacks help
 Usage: spinpacks <command> [pack] [options]
@@ -77,25 +78,25 @@ Commands:
   doctor                      Check for configuration problems
   version                     Print version
   completion <shell>          Generate shell completion (bash, zsh, fish)
-  help [command]              Show help [for
+  help [command]              Show help [for COMMAND]
 
 Options:
   --scope SCOPE      Target scope: user (default), project, local, managed
-  --force            Skip safety guards (remo
+  --force            Skip safety guards (remove untracked packs)
   --all              Operate on all tracked packs (uninstall/update) or all scopes (status)
-  --installed        Filter list to only instto one scope)
+  --installed        Filter list to only installed packs (--scope filters to one scope)
   --dry-run          Show what would change without writing anything
   -v, --verbose      Show detailed output
   -q, --quiet        Suppress non-error output (write commands only)
   --json             Output as JSON
   --no-color         Disable color output
-  -n, --count COUNT  Number of verbs to sampl
+  -n, --count COUNT  Number of verbs to sample
   -V, --version      Print version
   -h, --help         Show this help message
 
 Environment:
   NO_COLOR           Disable color output when set (any value)
-  CLAUDE_CONFIG_DIR  Override Claude Code's cclaude)
+  CLAUDE_CONFIG_DIR  Override Claude Code's config directory (default: ~/.claude)
 ```
 
 Run `spinpacks help <command>` for detailed usage of any command.
