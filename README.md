@@ -59,47 +59,46 @@ spinpacks status
 spinpacks uninstall the-office
 ```
 
-## Commands
+## Usage
+```
+$ spinpacks help
+Usage: spinpacks <command> [pack] [options]
 
-| Command | Description |
-|---|---|
-| `list [--installed] [-v]` | List available packs; `--installed` filters to installed ones, `-v` shows verb count |
-| `install, add <pack>` | Install a pack into Claude Code settings |
-| `uninstall, remove [<pack>]` | Remove a pack; `--all` removes every tracked pack |
-| `update [<pack>]` | Reinstall pack(s) to pick up new verbs after an upgrade |
-| `status [--all]` | Show active verbs, mode, and tracked packs; `--all` shows every scope |
-| `mode [replace\|append] [--dry-run]` | Get or set `spinnerVerbs.mode` (`replace` shows only your verbs; `append` blends with Claude's built-ins) |
-| `sample <pack> [-n N]` | Print N random verbs from a pack (default: 1) |
-| `info, show <pack>` | Show pack metadata and a sample of verbs |
-| `search <text>` | Search packs by name, description, tags, or verb content |
-| `doctor` | Validate settings files, state file, and pack integrity |
-| `completion <shell>` | Generate shell completion for bash, zsh, or fish |
-| `version` | Print the current version |
-| `help [command]` | Show help, or detailed help for a specific command |
+Commands:
+  list, ls                    List available packs (--installed filters to installed; -v shows verb count)
+  install, add <pack>         Install a pack into Claude Code settings (merges with existing verbs)
+  uninstall, remove [<pack>]  Remove a pack (or --all) from Claude Code settings
+  update [<pack>]             Reinstall pack(s) (all tracked if no pack given)
+  status                      Show active verbs, mode and tracked packs (--all shows every scope)
+  mode [replace|append]       Get or set Claude Code's spinnerVerbs.mode
+  sample <pack> [-n N]        Print N random verbs from a pack (default: 1)
+  info, show <pack>           Show pack details and a sample of verbs (-v lists all)
+  search <text>               Search packs by name, description, tags, or verb content (-v shows matching verbs)
+  doctor                      Check for configuration problems
+  version                     Print version
+  completion <shell>          Generate shell completion (bash, zsh, fish)
+  help [command]              Show help [for
+
+Options:
+  --scope SCOPE      Target scope: user (default), project, local, managed
+  --force            Skip safety guards (remo
+  --all              Operate on all tracked packs (uninstall/update) or all scopes (status)
+  --installed        Filter list to only instto one scope)
+  --dry-run          Show what would change without writing anything
+  -v, --verbose      Show detailed output
+  -q, --quiet        Suppress non-error output (write commands only)
+  --json             Output as JSON
+  --no-color         Disable color output
+  -n, --count COUNT  Number of verbs to sampl
+  -V, --version      Print version
+  -h, --help         Show this help message
+
+Environment:
+  NO_COLOR           Disable color output when set (any value)
+  CLAUDE_CONFIG_DIR  Override Claude Code's cclaude)
+```
 
 Run `spinpacks help <command>` for detailed usage of any command.
-
-## Options
-
-| Option | Description |
-|---|---|
-| `--scope SCOPE` | Target scope: `user` (default), `project`, `local`, `managed` |
-| `--force` | Skip safety guards (remove untracked packs) |
-| `--all` | Operate on all tracked packs (`uninstall`/`update`) or show all scopes (`status`) |
-| `--installed` | Filter `list` to only installed packs |
-| `--dry-run` | Preview changes without writing anything |
-| `-v`, `--verbose` | Show detailed output |
-| `-q`, `--quiet` | Suppress non-error output (write commands only) |
-| `--json` | Output as JSON (useful for scripting) |
-| `--no-color` | Disable color output |
-| `-n, --count COUNT` | Number of verbs to sample |
-
-## Environment
-
-| Variable | Description |
-|---|---|
-| `NO_COLOR` | Disable color output globally when set (any value) |
-| `CLAUDE_CONFIG_DIR` | Override Claude Code's config directory (default: `~/.claude`) |
 
 ## Scopes
 
