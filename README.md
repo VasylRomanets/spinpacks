@@ -28,7 +28,7 @@ That's what she said
 ### Homebrew (recommended)
 
 ```sh
-brew tap VasylRomanets/spinpacks
+brew tap VasylRomanets/tap
 brew install spinpacks
 ```
 
