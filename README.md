@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>Spinpacks</h1>
+  <h1>spinpacks</h1>
   <p><b>Because waiting for LLM generation should never be boring.</b></p>
 
   [![Homebrew Formula](https://img.shields.io/badge/homebrew-formula-blue.svg)](https://github.com/VasylRomanets/homebrew-tap)
@@ -28,14 +28,14 @@ That's what she said
 ### Homebrew (recommended)
 
 ```sh
-brew tap VasylRomanets/tap
+brew tap vasylromanets/tap
 brew install spinpacks
 ```
 
 ### Manual
 
 ```sh
-git clone https://github.com/VasylRomanets/spinpacks.git
+git clone https://github.com/vasylromanets/spinpacks.git
 # Add the bin directory to your PATH, or symlink the executable:
 ln -s "$(pwd)/spinpacks/bin/spinpacks" /usr/local/bin/spinpacks
 ```
