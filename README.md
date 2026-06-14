@@ -180,6 +180,4 @@ Please run `spinpacks doctor` before submitting to confirm your files are valid.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
-
-Copyright (c) 2026 Vasyl Romanets
+[MIT](./LICENSE)
